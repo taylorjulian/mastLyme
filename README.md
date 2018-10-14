@@ -2,7 +2,7 @@
 
 taylor minich, taylor.minich@duke.edu
 
-duke univeristy 
+duke university 
 
 october 14, 2018
 

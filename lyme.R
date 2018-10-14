@@ -1,9 +1,11 @@
+# set working directory, upload lyme disease data, create group numbers for counties
 setwd("/Users/taylorminich/Documents/grad/mp/data")
 lymeMA <- read.csv('lymeMA.csv')
 lymeMA$group <- 1:length(lymeMA[,1])
 lymeNC <- read.csv('lymeNC.csv')
 lymeNC$group <- 1:length(lymeNC[,1])
 
+# function that creates a data frame with county name, group number, year, and number of cases
 dataBuilder <- function(x){
   county <- c()
   cases <- c()
@@ -18,9 +20,11 @@ dataBuilder <- function(x){
   data
 }
 
+# runs function on lyme disease data
 lymeMA <- dataBuilder(lymeMA)
 lymeNC <- dataBuilder(lymeNC)
 
+# maps results of lyme disease data
 require(sf)
 require(ggplot2)
 

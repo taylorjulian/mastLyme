@@ -24,6 +24,29 @@ dataBuilder <- function(x){
 lymeMA <- dataBuilder(lymeMA)
 lymeNC <- dataBuilder(lymeNC)
 
+# creates cases vs year plot for MA
+xrange <- c(2000, 2016)
+yrange <- c(min(lymeMA$cases), max(lymeMA$cases))
+plot(x = NULL, y = NULL, xlim = xrange, ylim = yrange, 
+     xlab = 'year', ylab = 'cases', bty = 'l', las = 1)
+
+for(i in 1:length(lymeMA$group)){
+  lines(lymeMA$year[lymeMA$group == i], 
+         lymeMA$cases[lymeMA$group == i], col = i)
+}
+
+# creates cases vs year plot for NC
+xrange <- c(2000, 2016)
+yrange <- c(min(lymeNC$cases), max(lymeNC$cases))
+plot(x = NULL, y = NULL, xlim = xrange, ylim = yrange, 
+     xlab = 'year', ylab = 'cases', bty = 'l', las = 1)
+
+for(i in 1:length(lymeNC$group)){
+  lines(lymeNC$year[lymeNC$group == i], 
+        lymeNC$cases[lymeNC$group == i], col = i)
+}
+
+
 # maps results of lyme disease data
 require(sf)
 require(ggplot2)

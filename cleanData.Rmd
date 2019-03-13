@@ -1,0 +1,753 @@
+---
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(lubridate)
+library(fuzzyjoin)
+```
+
+```{r mammals}
+sites <- c('BART', 'BLAN', 'DSNY', 'GRSM', 'HARV', 'JERC', 'KONZ', 'ORNL', 'OSBS', 'SCBI', 'SERC', 'UKFS')
+
+cleanMammalData <- function(site){
+  mrpath <- paste0('/Users/taylorminich/Documents/grad/mp/data/mammals/raw/', site)
+  mppath <- paste0('/Users/taylorminich/Documents/grad/mp/data/mammals/processed/', site)
+  
+  # find files
+  files <- list.files(path = mrpath, full.names = TRUE)
+
+# create master df
+  assign(site, do.call('rbind', lapply(files, read.csv, header = TRUE)))
+  attach(get(site))
+
+# create df with necessary columns
+  collectDate <- ymd(get(site)$collectDate) # change factor to date
+  assign(site, data.frame(collectDate, domainID, siteID, plotID, nlcdClass, elevation, lat = decimalLatitude, lon = decimalLongitude, 
+                        geodeticDatum, trapStatus, taxonID, scientificName, taxonRank))
+  write.csv(get(site), file = paste0(mppath, '.csv'), row.names = FALSE)
+}
+
+for(i in sites){
+  cleanMammalData(i)
+}
+```
+
+```{r ticks}
+
+cleanTickData <- function(site){
+  trpath <- paste0('/Users/taylorminich/Documents/grad/mp/data/ticks/raw/', site)
+  tppath <- paste0('/Users/taylorminich/Documents/grad/mp/data/ticks/processed/', site)
+
+# find files
+  files <- list.files(path = trpath, full.names = TRUE)
+
+# create master df
+  assign(site, do.call('rbind', lapply(files, read.csv, header = TRUE)))
+  attach(get(site))
+  larvaCount[is.na(larvaCount)] <- 0
+
+# create df with necessary columns
+  collectDate <- substr(get(site)$collectDate, 1, 10)
+  collectDate <- ymd(collectDate) # change factor to date
+  assign(site, data.frame(collectDate, domainID, siteID, plotID, nlcdClass, elevation, lat = decimalLatitude, lon = decimalLongitude, 
+                        geodeticDatum, totalSampledArea, targetTaxaPresent, adultCount, nymphCount, larvaCount, 
+                        totalCount = (adultCount + nymphCount + larvaCount)))
+  write.csv(get(site), file = paste0(tppath, '.csv'), row.names = FALSE)
+}
+
+for(i in sites){
+  cleanTickData(i)
+}
+
+```
+
+```{r plants}
+prpath <- '/Users/taylorminich/Documents/grad/mp/data/plants/raw/'
+pppath <- '/Users/taylorminich/Documents/grad/mp/data/plants/processed/'
+prspath <- '/Users/taylorminich/Documents/grad/mp/data/plants/raw/species/'
+sites <- c('BART', 'BLAN', 'DSNY', 'GRSM', 'HARV', 'JERC', 'KONZ', 'ORNL', 'OSBS', 'SCBI', 'SERC', 'UKFS')
+
+createSpecies <- function(site){
+  prpath <- paste0('/Users/taylorminich/Documents/grad/mp/data/plants/raw/', site)
+  prspath <- paste0('/Users/taylorminich/Documents/grad/mp/data/plants/raw/species/', site)
+  assign(site, read.csv(paste0(prpath, '.csv'), header = TRUE))
+  assign(paste0('species', site), data.frame(unique(get(site)$taxonID), unique(get(site)$scientificName)))
+  write.csv(get(paste0('species', site)), file = paste0(prspath, '.csv'), row.names = FALSE)
+}
+
+for(i in sites){
+  createSpecies(i)
+}
+
+# create species data frame
+prspath <- '/Users/taylorminich/Documents/grad/mp/data/plants/raw/species/'
+files <- list.files(path = prspath, full.names = TRUE)
+species <- do.call('rbind', lapply(files, read.csv, header = TRUE)) %>%
+  distinct() %>%
+  rename(taxonID = unique.get.site..taxonID., scientificName = unique.get.site..scientificName.) %>%
+  arrange(taxonID) %>%
+  mutate(code = recode_factor(taxonID, `2PLANT` = 'unknUNKN', `ABIES` = 'abieUNKN', `ACER` = 'acerUNKN', `ACPE` = 'acerPens',
+                                 `ACRU` = 'acerRubr', `ACSA2` = 'acerSac2', `ACSA3` = 'acerSacc', `ACSAS` = 'acerSacc', `BEAL2` = 'betuAlle',
+                                 `BECAC` = 'betuUNKN', `BELE` = 'betuLent', `BEPA` = 'betuPapy', `BEPAC2` = 'betuPapy', `BEPAP` = 'betuPapy',
+                                 `BEPO` = 'betuPopu', `FAGR` = 'faguGran', `FRAM2` = 'fraxAmer', `FRAXI` = 'fraxUNKN', `FRPE` = 'fraxPenn', 
+                                 `HAVI4` = 'hamaVirg', `OSVI` = 'ostrVirg', `PICEA` = 'piceUNKN', `PINACE` = 'pinuUNKN', `PINUS` = 'pinuUNKN', 
+                                 `PIST` = 'pinuStrob', `POGR4` = 'popuGran', `POTR5` = 'popuTrem', `PRPE2` = 'prunPens', `PRPEP` = 'prunPens',
+                                 `QURU` = 'querRubr', `TAXUS` = 'taxuUNKN', `TIAM` = 'tiliAmer', `TSCA` = 'tsugCana', `ULAM` = 'ulmuAmer',
+                                 `VILA` = 'vibuLant', `VILA11` = 'vibuLant', `ACNEN` = 'acerNegu', `AIAL` = 'ailaAlti', `ASIMI` = 'asimUNKN', 
+                                 `CACO15` = 'caryCord', `CAGL8` = 'caryGlab', `CAOV3` = 'caryOval', `CARYA` = 'caryUNKN', `CATO6` = 'caryTome', 
+                                 `CEOC` = 'celtOcci', `CEOR7` = 'celaOrbi', `COFL2` = 'cornFlor', `CRATA` = 'cratUNKN', `ELUM` = 'elaeUmbe',
+                                 `GIBI2` = 'ginkBilo', `GLTR` = 'gledTria', `JUNI` = 'juglNigr', `JUVI` = 'juniVirg', `JUVIV` = 'juniVirg', 
+                                 `LIBE3` = 'lindBenz', `LISI` = 'liguSine', `LITU` = 'liriTuli', `LOJA` = 'loniJapo', `LOMA6` = 'loniMaac',
+                                 `MAPO` = 'maclPomi', `MOAL` = 'moruAlba', `PAQU2` = 'partQuin', `PLOC` = 'platOcci', `PRAV` = 'prunUNKN', 
+                                 `PRSES` = 'prunSero', `QUAL` = 'querAlba', `QUMU` = 'querMueh', `QUVE` = 'querVelu', `RHDA` = 'rhamDavu', 
+                                 `RHSC3` = 'rhodScan', `ROMU` = 'rosaMult', `ROPS` = 'robiPseu', `RUPH` = 'rubuPhoe', `SASSA` = 'sassAlbi',
+                                 `TEDA` = 'tetrDani', `TORA2` = 'toxiRadi', `ULMUS` = 'ulmuUNKN', `VIBUR` = 'vibuUNKN', `VITIS` = 'vitiUNKN',
+                                 `AQUIFO` = 'ilexUNKN', `AQUIFOSPP` = 'ilexUNKN', `BERA3` = 'bejaRace', `CAAM2` = 'callAmer', 
+                                 `GADU` = 'gaylDumo', `GAFR2` = 'gaylFron', `HYBR3` = 'hypeBrac', `ILGL` = 'ilexGlab', `LYFE` = 'lyonFerr',
+                                 `LYLU3` = 'lyonLuci', `LYONI` = 'lyonUNKN', `MAVI2` = 'magnVirg', `MOCE2` = 'moreVirg', `MOCE2` = 'moreCeri',
+                                 `PEBO` = 'persBorb', `PHPY4` = 'photPyri', `PIEL` = 'pinuElli', `PIPA2` = 'pinuPalu', `QUCH` = 'querChap', 
+                                 `QUERC` = 'querUNKN', `QUGE2` = 'querGemi', `QUIN7` = 'querInop', `QUMI2` = 'querMini', `QUMY` = 'querMyrt', 
+                                 `QUNI` = 'querNigr', `QUVI` = 'querVirg', `RHCO` = 'rhusCopa', `SERE2` = 'sereRepe', `VIRO3` = 'vitiRotu', 
+                                 `ACRUR` = 'acerRubr', `AEFL` = 'aescFlav', `AMLA` = 'amelLaev', `ASTR` = 'asimTril', `BETUL` = 'betuUNKN', 
+                                 `BICA` = 'bignCapr', `CACA18` = 'carpCaro', `CAFL22` = 'calyFlor', `CASTA` = 'castUNKN',
+                                 `CLAC3` = 'cletAcum', `CLADR` = 'cladUNKN', `GAUR` = 'gaylUrsi', `HALES` = 'haleUNKN', `ILOP` = 'ilexOpac',
+                                 `JUGLA` = 'juglUNKN', `KALA` = 'kalmLati', `LIBEB` = 'lindBenz', `LIST2` = 'liquStyr', `MAFR` = 'magnFras', 
+                                 `MAGNO` = 'magnUNKN', `NYSY` = 'nyssSylv', `OXYDE` = 'oxydUNKN', `PHHI2` = 'philHirs', `PIPUS` = 'pinuPung',
+                                 `PIRI` = 'pinuRigi', `PIRU` = 'pinuRube', `PITA` = 'pinuTaed', `PIVI2` = 'pinuVirg', `PRSE2` = 'prunSero', 
+                                 `PYPU` = 'pyruPube', `QUCO2` = 'querCocc', `QUMO4` = 'querMont', `RHODO` = 'rhodUNKN', `SAAL5` = 'sassAlbi', 
+                                 `SORBU` = 'sorbUNKN', `ULRU` = 'ulmuRubr', `VACCI` = 'vaccUNKN', `VIAE` = 'vitiAest', 
+                                 `2PLANT-H` = 'unknUNKN', `AMELA` = 'amelUNKN', `BETH` = 'berbThun', `CACAV` = 'carpCaro', 
+                                 `CAOV2` = 'caryOVAT', `COCO6` = 'coryCorn', `COPE80` = 'compPere', `CORNU` = 'cornUNKN', `GABA` = 'gaylBacc', 
+                                 `ILEX` = 'ilexUNKN', `ILMU` = 'ilexMucr', `KALMI` = 'kalmUNKN', `LOMO2` = 'loniMorr', `LYLI` = 'lyonLigu', 
+                                 `LYLIL` = 'lyonLigu', `PIAB` = 'piceAbie', `PRENA` = 'prenUNKN', `SANI4` = 'sambNigr', `SOAM3` = 'sorbAmer', 
+                                 `SPALL` = 'spirAlba', `TOVE` = 'toxiVern', `VACO` = 'vaccCory', `VIAC` = 'vibuAcer', `ACBA3` = 'acerBarb', 
+                                 `AEPA` = 'aescPavi', `ASAN6` = 'asimAngu', `ASPA18` = 'asimParv', `BIGNO` = 'bignUNKN', `CELA` = 'celtLaev',
+                                 `CELTI` = 'celtUNKN', `CERCI2` = 'cercUNKN', `CRATASPP` = 'cratUNKN', `CRFL2` = 'cratFlav', 
+                                 `CRSP` = 'cratSpat', `CRUN` = 'cratUnif', `DIOSP` = 'diosUNKN', `FRCA3` = 'fraxCaro', `GELSE` = 'gelsUNKN', 
+                                 `ILVO` = 'ilexVomi', `LEBI2` = 'lespBico', `LIST` = 'linuStri', `MORU2` = 'moruRubr', `PANAX` = 'panaUNKN', 
+                                 `PIEC2` = 'pinuEchi', `PRAM` = 'prunAmer', `PRAN3` = 'prunAngu', `PRUM` = 'prunUmbe', `PRUNU` = 'prunUNKN',
+                                 `QUERCSPP` = 'querUNKN', `QUFA` = 'querFalc', `QUHE2` = 'querHemi', `QUIN` = 'querInca', `QULA` = 'querLace', 
+                                 `QULA2` = 'querLaev', `QULA3` = 'querLaur', `QUMA13` = 'querMarg', `QUMA3` = 'querMari', `RHGL` = 'rhusGlab', 
+                                 `SAET` = 'sabaEton', `SIDER2` = 'sideUNKN', `SILA20` = 'sideLanu', `SILAL3` = 'sideLanu', `SITE2` = 'sideTena',
+                                 `SMGL` = 'smilGlau', `SMLA` = 'smilLaur', `SMRO` = 'smilRotu', `SMSM` = 'smilSmal', `ULAL` = 'ulmuAlat', 
+                                 `ULMUSSPP` = 'ulmuUNKN', `VAAR` = 'vaccArbo', `VAST` = 'vaccStam', `CEANO` = 'ceanUNKN', `CECA4` = 'cercCana', 
+                                 `CODR` = 'cornDrum', `QUMA2` = 'querMacr', `RHAR4` = 'rhusArom', `RIMI` = 'ribeMiss', `SYOR` = 'sympOrbi', 
+                                 `TRDA3` = 'tripDact', `ULPU` = 'ulmuPumi', `VIRI` = 'vitiRipa', `ZAAM` = 'zantAmer', `AMAR3` = 'amelArbo', 
+                                 `DIVIS` = 'diosVirg', `FRCA13` = 'franCaro', `ILMO` = 'ilexMont', `PYCA80` = 'pyruCall', `QUMI` = 'querMich', 
+                                 `QUST` = 'querStel', `VIRU` = 'vibuRufi', `ASIN` = 'asclInca', `ASIN12` = 'asimInca', `CEOC2` = 'cephOcci', 
+                                 `GOLA` = 'gordLasi', `ILCA` = 'ilexCass', `ILCO` = 'ilexCori', `ILMY` = 'ilexMyrt', `NYBI` = 'nyssBifl', 
+                                 `PEPA37` = 'persPalu', `PICL` = 'pinuClau', `SMAU` = 'smilAuri', `VIOLA` = 'violUNKN', `CECAC` = 'cercCana', 
+                                 `HYAR` = 'hydrArbo', `PATO2` = 'paulTome', `PYRUS` = 'pyruUNKN', `RUAL` = 'rubuAlle', `RUBUS` = 'rubuUNKN', 
+                                 `ARSP2` = 'aralSpin', `BENI` = 'betuNigr', `CARA2` = 'campRadi', `RUOC` = 'rubuOcci', `VIDE` = 'vibuDent',
+                                 `AMCO2` = 'ampeCord', `COAM3` = 'coryAmer', `EUATS` = 'euonAtro', `EUFO5` = 'euonFort', `GYDI` = 'gymnDioi', 
+                                 `LIVU` = 'liguVulg', `MORUS` = 'moruUNKN', `PODE3` = 'popuDelt', `ROAR3` = 'rosaArka', 
+                                 `EUAT5` = 'euonAtro', `DIVI5` = 'diosVirg', `PIPU5` = 'pinuPung')) %>%
+  mutate(genus = recode_factor(taxonID, `2PLANT` = 'Unknown', `ABIES` = 'Abies', `ACER` = 'Acer', `ACPE` = 'Acer',
+                                 `ACRU` = 'Acer', `ACSA2` = 'Acer', `ACSA3` = 'Acer', `ACSAS` = 'Acer', `BEAL2` = 'Betula',
+                                 `BECAC` = 'Betula', `BELE` = 'Betula', `BEPA` = 'Betula', `BEPAC2` = 'Betula', `BEPAP` = 'Betula',
+                                 `BEPO` = 'Betula', `FAGR` = 'Fagus', `FRAM2` = 'Fraxinus', `FRAXI` = 'Fraxinus', `FRPE` = 'Fraxinus', 
+                                 `HAVI4` = 'Hamamelis', `OSVI` = 'Ostrya', `PICEA` = 'Picea', `PINACE` = 'Pinus', `PINUS` = 'Pinus', 
+                                 `PIST` = 'Pinus', `POGR4` = 'Populus', `POTR5` = 'Populus', `PRPE2` = 'Prunus', `PRPEP` = 'Prunus',
+                                 `QURU` = 'Quercus', `TAXUS` = 'Taxus', `TIAM` = 'Tilia', `TSCA` = 'Tsuga', `ULAM` = 'Ulmus',
+                                 `VILA` = 'Viburnum', `VILA11` = 'Viburnum', `ACNEN` = 'Acer', `AIAL` = 'Ailanthus', `ASIMI` = 'Asimina', 
+                                 `CACO15` = 'Carya', `CAGL8` = 'Carya', `CAOV3` = 'Carya', `CARYA` = 'Carya', `CATO6` = 'Carya', 
+                                 `CEOC` = 'Celtis', `CEOR7` = 'Celastrus', `COFL2` = 'Cornus', `CRATA` = 'Crataegus', `ELUM` = 'Elaeagnus',
+                                 `GIBI2` = 'Ginkgo', `GLTR` = 'Gleditsia', `JUNI` = 'Juglans', `JUVI` = 'Juniperus', `JUVIV` = 'Juniperus', 
+                                 `LIBE3` = 'Lindera', `LISI` = 'Ligustrum', `LITU` = 'Lriodendron', `LOJA` = 'Lonicera', `LOMA6` = 'Lonicera',
+                                 `MAPO` = 'Maclura', `MOAL` = 'Morus', `PAQU2` = 'Parthenocissus', `PLOC` = 'Platanus', `PRAV` = 'Prunus', 
+                                 `PRSES` = 'Prunus', `QUAL` = 'Quercus', `QUMU` = 'Quercus', `QUVE` = 'Quercus', `RHDA` = 'Rhamnus', 
+                                 `RHSC3` = 'Rhodotypos', `ROMU` = 'Rosa', `ROPS` = 'Robinia', `RUPH` = 'Rubus', `SASSA` = 'Sassafras',
+                                 `TEDA` = 'Tetradium', `TORA2` = 'Toxicodendron', `ULMUS` = 'Ulmus', `VIBUR` = 'Viburnum', `VITIS` = 'Vitis',
+                                 `AQUIFO` = 'Ilex', `AQUIFOSPP` = 'Ilex', `BERA3` = 'Bejaria', `CAAM2` = 'Callicarpa', 
+                                 `GADU` = 'Gaylussacia', `GAFR2` = 'Gaylussacia', `HYBR3` = 'Hypericum', `ILGL` = 'Ilex', `LYFE` = 'Lyonia',
+                                 `LYLU3` = 'Lyonia', `LYONI` = 'Lyonia', `MAVI2` = 'Magnolia', `MOCE2` = 'Morella', `MOCE2` = 'Morella',
+                                 `PEBO` = 'Persea', `PHPY4` = 'Photinia', `PIEL` = 'Pinus', `PIPA2` = 'Pinus', `QUCH` = 'Quercus', 
+                                 `QUERC` = 'Quercus', `QUGE2` = 'Quercus', `QUIN7` = 'Quercus', `QUMI2` = 'Quercus', `QUMY` = 'Quercus', 
+                                 `QUNI` = 'Quercus', `QUVI` = 'Quercus', `RHCO` = 'Rhus', `SERE2` = 'Serenoa', `VIRO3` = 'Vitis', 
+                                 `ACRUR` = 'Acer', `AEFL` = 'Aesculus', `AMLA` = 'Amelanchier', `ASTR` = 'Asimina', `BETUL` = 'Betula', 
+                                 `BICA` = 'Bignonia', `CACA18` = 'Carpinus', `CAFL22` = 'Calycanthus', `CASTA` = 'Castanea',
+                                 `CLAC3` = 'Clethra', `CLADR` = 'Cladrastis', `GAUR` = 'Gaylussacia', `HALES` = 'Halesia', `ILOP` = 'Ilex',
+                                 `JUGLA` = 'Juglans', `KALA` = 'Kalmia', `LIBEB` = 'Lindera', `LIST2` = 'Liquidambar', `MAFR` = 'Magnolia', 
+                                 `MAGNO` = 'Magnolia', `NYSY` = 'Nyssa', `OXYDE` = 'Oxydendron', `PHHI2` = 'Philadelphus', `PIPUS` = 'Pinus',
+                                 `PIRI` = 'Pinus', `PIRU` = 'Pinus', `PITA` = 'Pinus', `PIVI2` = 'Pinus', `PRSE2` = 'Prunus', 
+                                 `PYPU` = 'Pyrularia', `QUCO2` = 'Quercus', `QUMO4` = 'Quercus', `RHODO` = 'Rhododendron', 
+                                 `SAAL5` = 'Sassafras', `SORBU` = 'Sorbus', `ULRU` = 'Ulmus', `VACCI` = 'Vaccinium', `VIAE` = 'Vitis', 
+                                 `2PLANT-H` = 'Unknown', `AMELA` = 'Amelanchier', `BETH` = 'Rhododendron', `CACAV` = 'Carpinus', 
+                                 `CAOV2` = 'Carya', `COCO6` = 'Corylus', `COPE80` = 'Comptonia', `CORNU` = 'Cornus', `GABA` = 'Gaylussacia', 
+                                 `ILEX` = 'Ilex', `ILMU` = 'Ilex', `KALMI` = 'Kalmia', `LOMO2` = 'Lonicera', `LYLI` = 'Lyonia', 
+                                 `LYLIL` = 'Lyonia', `PIAB` = 'Picea', `PRENA` = 'Prenanthes', `SANI4` = 'Sambucus', `SOAM3` = 'Sorbus', 
+                                 `SPALL` = 'Spiraea', `TOVE` = 'Toxicodendron', `VACO` = 'Vaccinium', `VIAC` = 'Viburnum', `ACBA3` = 'Acer', 
+                                 `AEPA` = 'Aesculus', `ASAN6` = 'Asimina', `ASPA18` = 'Asimina', `BIGNO` = 'Bignonia', `CELA` = 'Celtis',
+                                 `CELTI` = 'Celtis', `CERCI2` = 'Cercis', `CRATASPP` = 'Crataegus', `CRFL2` = 'Crataegus', 
+                                 `CRSP` = 'Crataegus', `CRUN` = 'Crataegus', `DIOSP` = 'Diospyros', `FRCA3` = 'Fraxinus', `GELSE` ='Gelsemium', 
+                                 `ILVO` = 'Ilex', `LEBI2` = 'Lespedeza', `LIST` = 'Linum', `MORU2` = 'Morus', `PANAX` = 'Panax', 
+                                 `PIEC2` = 'Pinus', `PRAM` = 'Prunus', `PRAN3` = 'Prunus', `PRUM` = 'Prunus', `PRUNU` = 'Prunus',
+                                 `QUERCSPP` = 'Quercus', `QUFA` = 'Quercus', `QUHE2` = 'Quercus', `QUIN` = 'Quercus', `QULA` = 'Quercus', 
+                                 `QULA2` = 'Quercus', `QULA3` = 'Quercus', `QUMA13` = 'Quercus', `QUMA3` = 'Quercus', `RHGL` = 'Rhus', 
+                                 `SAET` = 'Sabal', `SIDER2` = 'Sideroxylon', `SILA20` = 'Sideroxylon', `SILAL3` = 'Sideroxylon',  
+                                 `SITE2` = 'Sideroxylon',`SMGL` = 'Smilax', `SMLA` = 'Smilax', `SMRO` = 'Smilax', `SMSM` = 'Smilax', 
+                                 `ULAL` = 'Ulmus', `ULMUSSPP` = 'Ulmus', `VAAR` = 'Vaccinium', `VAST` = 'Vaccinium', `CEANO` = 'Ceanothus', 
+                                 `CECA4` = 'Cercis', `CODR` = 'Cornus', `QUMA2` = 'Quercus', `RHAR4` = 'Rhus', `RIMI` = 'Ribes', 
+                                 `SYOR` = 'Symplocos', `TRDA3` = 'Tripsacum', `ULPU` = 'Ulmus', `VIRI` = 'Vitis', `ZAAM` = 'Zanthoxylum', 
+                                 `AMAR3` = 'Amelanchier', `DIVIS` = 'Diospyros', `FRCA13` = 'Frangula', `ILMO` = 'Ilex', 
+                                 `PYCA80` = 'Pyrularia', `QUMI` = 'Quercus', `QUST` = 'Quercus', `VIRU` = 'Viburnum', `ASIN` = 'Asclepias', 
+                                 `ASIN12` = 'Asimina', `CEOC2` = 'Cephalanthus', `GOLA` = 'Gordonia', `ILCA` = 'Ilex', `ILCO` = 'Ilex', 
+                                 `ILMY` = 'Ilex', `NYBI` = 'Nyssa', `PEPA37` = 'Persea', `PICL` = 'Pinus', `SMAU` = 'Smilax', `VIOLA` = 'Viola',
+                                 `CECAC` = 'Cercis', `HYAR` = 'Hydrangea', `PATO2` = 'Paulownia', `PYRUS` = 'Pyrus', `RUAL` = 'Rubus', 
+                                 `RUBUS` = 'Rubus', `ARSP2` = 'Aralia', `BENI` = 'Betula', `CARA2` = 'Campsis', `RUOC` = 'Rubus', 
+                                 `VIDE` = 'Viburnum', `AMCO2` = 'Ampelopsis', `COAM3` = 'Corylus', `EUATS` = 'Euonymus', `EUFO5` = 'Euonymus', 
+                                 `GYDI` = 'Gymnocladus', `LIVU` = 'Ligustrum', `MORUS` = 'Morus', `PODE3` = 'Populus', `ROAR3` = 'Rosa',
+                                 `EUAT5` = 'Euonymus', `DIVI5` = 'Diospyros', `PIPU5` = 'Pinus'))
+
+
+
+
+#write.csv(species, file = paste0(pppath, 'species.csv'), row.names = FALSE)
+
+
+
+# read in all plant data for each site
+BART <- read.csv(paste0(prpath, 'BART.csv'))
+BLAN <- read.csv(paste0(prpath, 'BLAN.csv'))
+DSNY <- read.csv(paste0(prpath, 'DSNY.csv'))
+GRSM <- read.csv(paste0(prpath, 'GRSM.csv'))
+HARV <- read.csv(paste0(prpath, 'HARV.csv'))
+JERC <- read.csv(paste0(prpath, 'JERC.csv'))
+KONZ <- read.csv(paste0(prpath, 'KONZ.csv'))
+ORNL <- read.csv(paste0(prpath, 'ORNL.csv'))
+OSBS <- read.csv(paste0(prpath, 'OSBS.csv'))
+SCBI <- read.csv(paste0(prpath, 'SCBI.csv'))
+SERC <- read.csv(paste0(prpath, 'SERC.csv'))
+UKFS <- read.csv(paste0(prpath, 'UKFS.csv'))
+
+# loop through all plots for all sites
+for(site in sites){
+  plots <- unique(get(site)$plotID)
+
+  writePlot <- function(plot) {
+    prppath <- paste0('/Users/taylorminich/Documents/grad/mp/data/plants/raw/plots/', plot)
+    assign(paste0(plot), get(site) %>%
+      filter(plotID == plot) %>%
+      mutate(date = ymd(date)) %>%
+      mutate(range = ymd(date) %m+% months(6)) %>%
+      filter(date >= min(date) & date <= min(range)) %>%
+      select(siteID, plotID, taxonID, scientificName, taxonRank)) 
+  write.csv(get(paste0(plot)), file = paste0(prppath, '.csv'), row.names = FALSE)
+  }
+
+  for(i in plots){
+    writePlot(i)
+  }
+}
+
+# create species data frame
+prppath <- '/Users/taylorminich/Documents/grad/mp/data/plants/raw/plots/'
+files <- list.files(path = prppath, full.names = TRUE)
+plots <- do.call('rbind', lapply(files, read.csv, header = TRUE)) %>%
+  select(siteID, plotID, taxonID, scientificName, taxonRank) %>%
+  arrange(plotID)
+#write.csv(plots, file = paste0(pppath, 'plots.csv'), row.names = FALSE)
+```
+
+```{r plants}
+sites <- c('BART', 'BLAN', 'DSNY', 'GRSM', 'HARV', 'OSBS', 'SCBI', 'SERC')
+
+cleanPlantData <- function(site){
+  prpath <- paste0('/Users/taylorminich/Documents/grad/mp/data/plants/raw/', site)
+  pppath <- paste0('/Users/taylorminich/Documents/grad/mp/data/plants/processed/', site)
+  
+  id <- read.csv(paste0('/Users/taylorminich/Documents/grad/mp/data/plants/raw/id/', site, '.csv'), header = TRUE)
+  
+  # find files
+  files <- list.files(path = prpath, full.names = TRUE)
+
+# create master df
+  assign(site, do.call('rbind', lapply(files, read.csv, header = TRUE)))
+  
+  tmp <- get(site) %>%  
+    left_join(id, by = c('individualID', 'eventID', 'plotID')) %>%
+    mutate(year = str_sub(eventID, -4, -1)) %>%
+    mutate(code = recode_factor(taxonID, `2PLANT` = 'unknUNKN', `ABIES` = 'abieUNKN', `ACER` = 'acerUNKN', `ACPE` = 'acerPens',
+                                 `ACRU` = 'acerRubr', `ACSA2` = 'acerSac2', `ACSA3` = 'acerSacc', `ACSAS` = 'acerSacc', `BEAL2` = 'betuAlle',
+                                 `BECAC` = 'betuUNKN', `BELE` = 'betuLent', `BEPA` = 'betuPapy', `BEPAC2` = 'betuPapy', `BEPAP` = 'betuPapy',
+                                 `BEPO` = 'betuPopu', `FAGR` = 'faguGran', `FRAM2` = 'fraxAmer', `FRAXI` = 'fraxUNKN', `FRPE` = 'fraxPenn', 
+                                 `HAVI4` = 'hamaVirg', `OSVI` = 'ostrVirg', `PICEA` = 'piceUNKN', `PINACE` = 'pinuUNKN', `PINUS` = 'pinuUNKN', 
+                                 `PIST` = 'pinuStrob', `POGR4` = 'popuGran', `POTR5` = 'popuTrem', `PRPE2` = 'prunPens', `PRPEP` = 'prunPens',
+                                 `QURU` = 'querRubr', `TAXUS` = 'taxuUNKN', `TIAM` = 'tiliAmer', `TSCA` = 'tsugCana', `ULAM` = 'ulmuAmer',
+                                 `VILA` = 'vibuLant', `VILA11` = 'vibuLant', `ACNEN` = 'acerNegu', `AIAL` = 'ailaAlti', `ASIMI` = 'asimUNKN', 
+                                 `CACO15` = 'caryCord', `CAGL8` = 'caryGlab', `CAOV3` = 'caryOval', `CARYA` = 'caryUNKN', `CATO6` = 'caryTome', 
+                                 `CEOC` = 'celtOcci', `CEOR7` = 'celaOrbi', `COFL2` = 'cornFlor', `CRATA` = 'cratUNKN', `ELUM` = 'elaeUmbe',
+                                 `GIBI2` = 'ginkBilo', `GLTR` = 'gledTria', `JUNI` = 'juglNigr', `JUVI` = 'juniVirg', `JUVIV` = 'juniVirg', 
+                                 `LIBE3` = 'lindBenz', `LISI` = 'liguSine', `LITU` = 'liriTuli', `LOJA` = 'loniJapo', `LOMA6` = 'loniMaac',
+                                 `MAPO` = 'maclPomi', `MOAL` = 'moruAlba', `PAQU2` = 'partQuin', `PLOC` = 'platOcci', `PRAV` = 'prunUNKN', 
+                                 `PRSES` = 'prunSero', `QUAL` = 'querAlba', `QUMU` = 'querMueh', `QUVE` = 'querVelu', `RHDA` = 'rhamDavu', 
+                                 `RHSC3` = 'rhodScan', `ROMU` = 'rosaMult', `ROPS` = 'robiPseu', `RUPH` = 'rubuPhoe', `SASSA` = 'sassAlbi',
+                                 `TEDA` = 'tetrDani', `TORA2` = 'toxiRadi', `ULMUS` = 'ulmuUNKN', `VIBUR` = 'vibuUNKN', `VITIS` = 'vitiUNKN',
+                                 `AQUIFO` = 'ilexUNKN', `AQUIFOSPP` = 'ilexUNKN', `BERA3` = 'bejaRace', `CAAM2` = 'callAmer', 
+                                 `GADU` = 'gaylDumo', `GAFR2` = 'gaylFron', `HYBR3` = 'hypeBrac', `ILGL` = 'ilexGlab', `LYFE` = 'lyonFerr',
+                                 `LYLU3` = 'lyonLuci', `LYONI` = 'lyonUNKN', `MAVI2` = 'magnVirg', `MOCE2` = 'moreVirg', `MOCE2` = 'moreCeri',
+                                 `PEBO` = 'persBorb', `PHPY4` = 'photPyri', `PIEL` = 'pinuElli', `PIPA2` = 'pinuPalu', `QUCH` = 'querChap', 
+                                 `QUERC` = 'querUNKN', `QUGE2` = 'querGemi', `QUIN7` = 'querInop', `QUMI2` = 'querMini', `QUMY` = 'querMyrt', 
+                                 `QUNI` = 'querNigr', `QUVI` = 'querVirg', `RHCO` = 'rhusCopa', `SERE2` = 'sereRepe', `VIRO3` = 'vitiRotu', 
+                                 `ACRUR` = 'acerRubr', `AEFL` = 'aescFlav', `AMLA` = 'amelLaev', `ASTR` = 'asimTril', `BETUL` = 'betuUNKN', 
+                                 `BICA` = 'bignCapr', `CACA18` = 'carpCaro', `CAFL22` = 'calyFlor', `CASTA` = 'castUNKN',
+                                 `CLAC3` = 'cletAcum', `CLADR` = 'cladUNKN', `GAUR` = 'gaylUrsi', `HALES` = 'haleUNKN', `ILOP` = 'ilexOpac',
+                                 `JUGLA` = 'juglUNKN', `KALA` = 'kalmLati', `LIBEB` = 'lindBenz', `LIST2` = 'liquStyr', `MAFR` = 'magnFras', 
+                                 `MAGNO` = 'magnUNKN', `NYSY` = 'nyssSylv', `OXYDE` = 'oxydUNKN', `PHHI2` = 'philHirs', `PIPUS` = 'pinuPung',
+                                 `PIRI` = 'pinuRigi', `PIRU` = 'pinuRube', `PITA` = 'pinuTaed', `PIVI2` = 'pinuVirg', `PRSE2` = 'prunSero', 
+                                 `PYPU` = 'pyruPube', `QUCO2` = 'querCocc', `QUMO4` = 'querMont', `RHODO` = 'rhodUNKN', `SAAL5` = 'sassAlbi', 
+                                 `SORBU` = 'sorbUNKN', `ULRU` = 'ulmuRubr', `VACCI` = 'vaccUNKN', `VIAE` = 'vitiAest', 
+                                 `2PLANT-H` = 'unknUNKN', `AMELA` = 'amelUNKN', `BETH` = 'berbThun', `CACAV` = 'carpCaro', 
+                                 `CAOV2` = 'caryOvat', `COCO6` = 'coryCorn', `COPE80` = 'compPere', `CORNU` = 'cornUNKN', `GABA` = 'gaylBacc', 
+                                 `ILEX` = 'ilexUNKN', `ILMU` = 'ilexMucr', `KALMI` = 'kalmUNKN', `LOMO2` = 'loniMorr', `LYLI` = 'lyonLigu', 
+                                 `LYLIL` = 'lyonLigu', `PIAB` = 'piceAbie', `PRENA` = 'prenUNKN', `SANI4` = 'sambNigr', `SOAM3` = 'sorbAmer', 
+                                 `SPALL` = 'spirAlba', `TOVE` = 'toxiVern', `VACO` = 'vaccCory', `VIAC` = 'vibuAcer', `ACBA3` = 'acerBarb', 
+                                 `AEPA` = 'aescPavi', `ASAN6` = 'asimAngu', `ASPA18` = 'asimParv', `BIGNO` = 'bignUNKN', `CELA` = 'celtLaev',
+                                 `CELTI` = 'celtUNKN', `CERCI2` = 'cercUNKN', `CRATASPP` = 'cratUNKN', `CRFL2` = 'cratFlav', 
+                                 `CRSP` = 'cratSpat', `CRUN` = 'cratUnif', `DIOSP` = 'diosUNKN', `FRCA3` = 'fraxCaro', `GELSE` = 'gelsUNKN', 
+                                 `ILVO` = 'ilexVomi', `LEBI2` = 'lespBico', `LIST` = 'linuStri', `MORU2` = 'moruRubr', `PANAX` = 'panaUNKN', 
+                                 `PIEC2` = 'pinuEchi', `PRAM` = 'prunAmer', `PRAN3` = 'prunAngu', `PRUM` = 'prunUmbe', `PRUNU` = 'prunUNKN',
+                                 `QUERCSPP` = 'querUNKN', `QUFA` = 'querFalc', `QUHE2` = 'querHemi', `QUIN` = 'querInca', `QULA` = 'querLace', 
+                                 `QULA2` = 'querLaev', `QULA3` = 'querLaur', `QUMA13` = 'querMarg', `QUMA3` = 'querMari', `RHGL` = 'rhusGlab', 
+                                 `SAET` = 'sabaEton', `SIDER2` = 'sideUNKN', `SILA20` = 'sideLanu', `SILAL3` = 'sideLanu', `SITE2` = 'sideTena',
+                                 `SMGL` = 'smilGlau', `SMLA` = 'smilLaur', `SMRO` = 'smilRotu', `SMSM` = 'smilSmal', `ULAL` = 'ulmuAlat', 
+                                 `ULMUSSPP` = 'ulmuUNKN', `VAAR` = 'vaccArbo', `VAST` = 'vaccStam', `CEANO` = 'ceanUNKN', `CECA4` = 'cercCana', 
+                                 `CODR` = 'cornDrum', `QUMA2` = 'querMacr', `RHAR4` = 'rhusArom', `RIMI` = 'ribeMiss', `SYOR` = 'sympOrbi', 
+                                 `TRDA3` = 'tripDact', `ULPU` = 'ulmuPumi', `VIRI` = 'vitiRipa', `ZAAM` = 'zantAmer', `AMAR3` = 'amelArbo', 
+                                 `DIVIS` = 'diosVirg', `FRCA13` = 'franCaro', `ILMO` = 'ilexMont', `PYCA80` = 'pyruCall', `QUMI` = 'querMich', 
+                                 `QUST` = 'querStel', `VIRU` = 'vibuRufi', `ASIN` = 'asclInca', `ASIN12` = 'asimInca', `CEOC2` = 'cephOcci', 
+                                 `GOLA` = 'gordLasi', `ILCA` = 'ilexCass', `ILCO` = 'ilexCori', `ILMY` = 'ilexMyrt', `NYBI` = 'nyssBifl', 
+                                 `PEPA37` = 'persPalu', `PICL` = 'pinuClau', `SMAU` = 'smilAuri', `VIOLA` = 'violUNKN', `CECAC` = 'cercCana', 
+                                 `HYAR` = 'hydrArbo', `PATO2` = 'paulTome', `PYRUS` = 'pyruUNKN', `RUAL` = 'rubuAlle', `RUBUS` = 'rubuUNKN', 
+                                 `ARSP2` = 'aralSpin', `BENI` = 'betuNigr', `CARA2` = 'campRadi', `RUOC` = 'rubuOcci', `VIDE` = 'vibuDent',
+                                 `AMCO2` = 'ampeCord', `COAM3` = 'coryAmer', `EUATS` = 'euonAtro', `EUFO5` = 'euonFort', `GYDI` = 'gymnDioi', 
+                                 `LIVU` = 'liguVulg', `MORUS` = 'moruUNKN', `PODE3` = 'popuDelt', `ROAR3` = 'rosaArka', 
+                                 `EUAT5` = 'euonAtro', `DIVI5` = 'diosVirg', `PIPU5` = 'pinuPung')) %>%
+  mutate(genus = recode_factor(taxonID, `2PLANT` = 'Unknown', `ABIES` = 'Abies', `ACER` = 'Acer', `ACPE` = 'Acer',
+                                 `ACRU` = 'Acer', `ACSA2` = 'Acer', `ACSA3` = 'Acer', `ACSAS` = 'Acer', `BEAL2` = 'Betula',
+                                 `BECAC` = 'Betula', `BELE` = 'Betula', `BEPA` = 'Betula', `BEPAC2` = 'Betula', `BEPAP` = 'Betula',
+                                 `BEPO` = 'Betula', `FAGR` = 'Fagus', `FRAM2` = 'Fraxinus', `FRAXI` = 'Fraxinus', `FRPE` = 'Fraxinus', 
+                                 `HAVI4` = 'Hamamelis', `OSVI` = 'Ostrya', `PICEA` = 'Picea', `PINACE` = 'Pinus', `PINUS` = 'Pinus', 
+                                 `PIST` = 'Pinus', `POGR4` = 'Populus', `POTR5` = 'Populus', `PRPE2` = 'Prunus', `PRPEP` = 'Prunus',
+                                 `QURU` = 'Quercus', `TAXUS` = 'Taxus', `TIAM` = 'Tilia', `TSCA` = 'Tsuga', `ULAM` = 'Ulmus',
+                                 `VILA` = 'Viburnum', `VILA11` = 'Viburnum', `ACNEN` = 'Acer', `AIAL` = 'Ailanthus', `ASIMI` = 'Asimina', 
+                                 `CACO15` = 'Carya', `CAGL8` = 'Carya', `CAOV3` = 'Carya', `CARYA` = 'Carya', `CATO6` = 'Carya', 
+                                 `CEOC` = 'Celtis', `CEOR7` = 'Celastrus', `COFL2` = 'Cornus', `CRATA` = 'Crataegus', `ELUM` = 'Elaeagnus',
+                                 `GIBI2` = 'Ginkgo', `GLTR` = 'Gleditsia', `JUNI` = 'Juglans', `JUVI` = 'Juniperus', `JUVIV` = 'Juniperus', 
+                                 `LIBE3` = 'Lindera', `LISI` = 'Ligustrum', `LITU` = 'Lriodendron', `LOJA` = 'Lonicera', `LOMA6` = 'Lonicera',
+                                 `MAPO` = 'Maclura', `MOAL` = 'Morus', `PAQU2` = 'Parthenocissus', `PLOC` = 'Platanus', `PRAV` = 'Prunus', 
+                                 `PRSES` = 'Prunus', `QUAL` = 'Quercus', `QUMU` = 'Quercus', `QUVE` = 'Quercus', `RHDA` = 'Rhamnus', 
+                                 `RHSC3` = 'Rhodotypos', `ROMU` = 'Rosa', `ROPS` = 'Robinia', `RUPH` = 'Rubus', `SASSA` = 'Sassafras',
+                                 `TEDA` = 'Tetradium', `TORA2` = 'Toxicodendron', `ULMUS` = 'Ulmus', `VIBUR` = 'Viburnum', `VITIS` = 'Vitis',
+                                 `AQUIFO` = 'Ilex', `AQUIFOSPP` = 'Ilex', `BERA3` = 'Bejaria', `CAAM2` = 'Callicarpa', 
+                                 `GADU` = 'Gaylussacia', `GAFR2` = 'Gaylussacia', `HYBR3` = 'Hypericum', `ILGL` = 'Ilex', `LYFE` = 'Lyonia',
+                                 `LYLU3` = 'Lyonia', `LYONI` = 'Lyonia', `MAVI2` = 'Magnolia', `MOCE2` = 'Morella', `MOCE2` = 'Morella',
+                                 `PEBO` = 'Persea', `PHPY4` = 'Photinia', `PIEL` = 'Pinus', `PIPA2` = 'Pinus', `QUCH` = 'Quercus', 
+                                 `QUERC` = 'Quercus', `QUGE2` = 'Quercus', `QUIN7` = 'Quercus', `QUMI2` = 'Quercus', `QUMY` = 'Quercus', 
+                                 `QUNI` = 'Quercus', `QUVI` = 'Quercus', `RHCO` = 'Rhus', `SERE2` = 'Serenoa', `VIRO3` = 'Vitis', 
+                                 `ACRUR` = 'Acer', `AEFL` = 'Aesculus', `AMLA` = 'Amelanchier', `ASTR` = 'Asimina', `BETUL` = 'Betula', 
+                                 `BICA` = 'Bignonia', `CACA18` = 'Carpinus', `CAFL22` = 'Calycanthus', `CASTA` = 'Castanea',
+                                 `CLAC3` = 'Clethra', `CLADR` = 'Cladrastis', `GAUR` = 'Gaylussacia', `HALES` = 'Halesia', `ILOP` = 'Ilex',
+                                 `JUGLA` = 'Juglans', `KALA` = 'Kalmia', `LIBEB` = 'Lindera', `LIST2` = 'Liquidambar', `MAFR` = 'Magnolia', 
+                                 `MAGNO` = 'Magnolia', `NYSY` = 'Nyssa', `OXYDE` = 'Oxydendron', `PHHI2` = 'Philadelphus', `PIPUS` = 'Pinus',
+                                 `PIRI` = 'Pinus', `PIRU` = 'Pinus', `PITA` = 'Pinus', `PIVI2` = 'Pinus', `PRSE2` = 'Prunus', 
+                                 `PYPU` = 'Pyrularia', `QUCO2` = 'Quercus', `QUMO4` = 'Quercus', `RHODO` = 'Rhododendron', 
+                                 `SAAL5` = 'Sassafras', `SORBU` = 'Sorbus', `ULRU` = 'Ulmus', `VACCI` = 'Vaccinium', `VIAE` = 'Vitis', 
+                                 `2PLANT-H` = 'Unknown', `AMELA` = 'Amelanchier', `BETH` = 'Rhododendron', `CACAV` = 'Carpinus', 
+                                 `CAOV2` = 'Carya', `COCO6` = 'Corylus', `COPE80` = 'Comptonia', `CORNU` = 'Cornus', `GABA` = 'Gaylussacia', 
+                                 `ILEX` = 'Ilex', `ILMU` = 'Ilex', `KALMI` = 'Kalmia', `LOMO2` = 'Lonicera', `LYLI` = 'Lyonia', 
+                                 `LYLIL` = 'Lyonia', `PIAB` = 'Picea', `PRENA` = 'Prenanthes', `SANI4` = 'Sambucus', `SOAM3` = 'Sorbus', 
+                                 `SPALL` = 'Spiraea', `TOVE` = 'Toxicodendron', `VACO` = 'Vaccinium', `VIAC` = 'Viburnum', `ACBA3` = 'Acer', 
+                                 `AEPA` = 'Aesculus', `ASAN6` = 'Asimina', `ASPA18` = 'Asimina', `BIGNO` = 'Bignonia', `CELA` = 'Celtis',
+                                 `CELTI` = 'Celtis', `CERCI2` = 'Cercis', `CRATASPP` = 'Crataegus', `CRFL2` = 'Crataegus', 
+                                 `CRSP` = 'Crataegus', `CRUN` = 'Crataegus', `DIOSP` = 'Diospyros', `FRCA3` = 'Fraxinus', `GELSE` ='Gelsemium', 
+                                 `ILVO` = 'Ilex', `LEBI2` = 'Lespedeza', `LIST` = 'Linum', `MORU2` = 'Morus', `PANAX` = 'Panax', 
+                                 `PIEC2` = 'Pinus', `PRAM` = 'Prunus', `PRAN3` = 'Prunus', `PRUM` = 'Prunus', `PRUNU` = 'Prunus',
+                                 `QUERCSPP` = 'Quercus', `QUFA` = 'Quercus', `QUHE2` = 'Quercus', `QUIN` = 'Quercus', `QULA` = 'Quercus', 
+                                 `QULA2` = 'Quercus', `QULA3` = 'Quercus', `QUMA13` = 'Quercus', `QUMA3` = 'Quercus', `RHGL` = 'Rhus', 
+                                 `SAET` = 'Sabal', `SIDER2` = 'Sideroxylon', `SILA20` = 'Sideroxylon', `SILAL3` = 'Sideroxylon',  
+                                 `SITE2` = 'Sideroxylon',`SMGL` = 'Smilax', `SMLA` = 'Smilax', `SMRO` = 'Smilax', `SMSM` = 'Smilax', 
+                                 `ULAL` = 'Ulmus', `ULMUSSPP` = 'Ulmus', `VAAR` = 'Vaccinium', `VAST` = 'Vaccinium', `CEANO` = 'Ceanothus', 
+                                 `CECA4` = 'Cercis', `CODR` = 'Cornus', `QUMA2` = 'Quercus', `RHAR4` = 'Rhus', `RIMI` = 'Ribes', 
+                                 `SYOR` = 'Symplocos', `TRDA3` = 'Tripsacum', `ULPU` = 'Ulmus', `VIRI` = 'Vitis', `ZAAM` = 'Zanthoxylum', 
+                                 `AMAR3` = 'Amelanchier', `DIVIS` = 'Diospyros', `FRCA13` = 'Frangula', `ILMO` = 'Ilex', 
+                                 `PYCA80` = 'Pyrularia', `QUMI` = 'Quercus', `QUST` = 'Quercus', `VIRU` = 'Viburnum', `ASIN` = 'Asclepias', 
+                                 `ASIN12` = 'Asimina', `CEOC2` = 'Cephalanthus', `GOLA` = 'Gordonia', `ILCA` = 'Ilex', `ILCO` = 'Ilex', 
+                                 `ILMY` = 'Ilex', `NYBI` = 'Nyssa', `PEPA37` = 'Persea', `PICL` = 'Pinus', `SMAU` = 'Smilax', `VIOLA` = 'Viola',
+                                 `CECAC` = 'Cercis', `HYAR` = 'Hydrangea', `PATO2` = 'Paulownia', `PYRUS` = 'Pyrus', `RUAL` = 'Rubus', 
+                                 `RUBUS` = 'Rubus', `ARSP2` = 'Aralia', `BENI` = 'Betula', `CARA2` = 'Campsis', `RUOC` = 'Rubus', 
+                                 `VIDE` = 'Viburnum', `AMCO2` = 'Ampelopsis', `COAM3` = 'Corylus', `EUATS` = 'Euonymus', `EUFO5` = 'Euonymus', 
+                                 `GYDI` = 'Gymnocladus', `LIVU` = 'Ligustrum', `MORUS` = 'Morus', `PODE3` = 'Populus', `ROAR3` = 'Rosa',
+                                 `EUAT5` = 'Euonymus', `DIVI5` = 'Diospyros', `PIPU5` = 'Pinus')) %>%
+    select(year, plotID, individualID, taxonID, code, genus, stemDiameter, measurementHeight, growthForm, plantStatus) %>%
+    na.omit()
+
+# create df with necessary columns
+  write.csv(tmp, file = paste0(pppath, '.csv'), row.names = FALSE)
+}
+
+for(i in sites){
+  cleanPlantData(i)
+}
+
+```
+
+```{r trees}
+pppath <- '/Users/taylorminich/Documents/grad/mp/data/plants/processed/'
+papath <- '/Users/taylorminich/Documents/grad/mp/data/plants/abundance/'
+
+BART <- read.csv(paste0(pppath, 'BART.csv')) %>%
+  filter(measurementHeight > 100) %>%
+  filter(plantStatus != 'Dead, broken bole' | plantStatus != 'Standing dead') %>%
+  filter(genus != 'Unknown') %>%
+  mutate(siteID = 'BART') %>%
+  select(individualID, plotID, siteID, year, code, genus, stemDiameter) 
+
+BLAN <- read.csv(paste0(pppath, 'BLAN.csv')) %>%
+  filter(measurementHeight > 100) %>%
+  filter(plantStatus != 'Dead, broken bole' | plantStatus != 'Standing dead') %>%
+  filter(genus != 'Unknown') %>%
+  mutate(siteID = 'BLAN') %>%
+  select(individualID, plotID, siteID, year, code, genus, stemDiameter) 
+
+GRSM <- read.csv(paste0(pppath, 'GRSM.csv')) %>%
+  filter(measurementHeight > 100) %>%
+  filter(plantStatus != 'Dead, broken bole' | plantStatus != 'Standing dead') %>%
+  filter(genus != 'Unknown') %>%
+  mutate(siteID = 'GRSM') %>%
+  select(individualID, plotID, siteID, year, code, genus, stemDiameter) 
+
+HARV <- read.csv(paste0(pppath, 'HARV.csv')) %>%
+  filter(measurementHeight > 100) %>%
+  filter(plantStatus != 'Dead, broken bole' | plantStatus != 'Standing dead') %>%
+  filter(genus != 'Unknown') %>%
+  mutate(siteID = 'HARV') %>%
+  select(individualID, plotID, siteID, year, code, genus, stemDiameter) 
+
+OSBS <- read.csv(paste0(pppath, 'OSBS.csv')) %>%
+  filter(measurementHeight > 100) %>%
+  filter(plantStatus != 'Dead, broken bole' | plantStatus != 'Standing dead') %>%
+  filter(genus != 'Unknown') %>%
+  mutate(siteID = 'OSBS') %>%
+  select(individualID, plotID, siteID, year, code, genus, stemDiameter) 
+
+SCBI <- read.csv(paste0(pppath, 'SCBI.csv')) %>%
+  filter(measurementHeight > 100) %>%
+  filter(plantStatus != 'Dead, broken bole' | plantStatus != 'Standing dead') %>%
+  filter(genus != 'Unknown') %>%
+  mutate(siteID = 'SCBI') %>%
+  select(individualID, plotID, siteID, year, code, genus, stemDiameter) 
+
+SERC <- read.csv(paste0(pppath, 'SERC.csv')) %>%
+  filter(measurementHeight > 100) %>%
+  filter(plantStatus != 'Dead, broken bole' | plantStatus != 'Standing dead') %>%
+  filter(genus != 'Unknown') %>%
+  mutate(siteID = 'SERC') %>%
+  select(individualID, plotID, siteID, year, code, genus, stemDiameter) 
+
+tree <- bind_rows(BART, BLAN, GRSM, HARV, OSBS, SCBI, SERC)
+write.csv(tree, file =  paste0(papath, 'tree.csv'), row.names = FALSE)
+```
+
+```{r seeds}
+srpath <- '/Users/taylorminich/Documents/grad/mp/data/seeds/raw/'
+sppath <- '/Users/taylorminich/Documents/grad/mp/data/seeds/processed/'
+
+years <- 2013:2018
+sites <- c('BART', 'BLAN', 'GRSM', 'HARV', 'OSBS', 'SCBI', 'SERC')
+
+# acer
+#load(paste0(srpath, 'acerOutput.rdata'))
+
+acer <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+remove(output)
+
+# asimina
+#load(paste0(srpath, 'asiminaOutput.rdata'))
+
+asimina <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+remove(output)
+
+# betula
+load(paste0(srpath, 'betulaOutput.rdata'))
+
+betula <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+
+remove(output)
+
+# carya
+#load(paste0(srpath, 'caryaOutput.rdata'))
+
+carya <- output$parameters$betaFec# %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+remove(output)
+  
+# cornus
+load(paste0(srpath, 'cornusOutput.rdata'))
+
+cornus <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+remove(output)
+
+# fagus
+load(paste0(srpath, 'fagusOutput.rdata'))
+
+fagus <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'faguGran') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+remove(output)
+
+# fraxinus
+load(paste0(srpath, 'fraxinusOutput.rdata'))
+
+fraxinus <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+remove(output)
+
+# ilex 
+load(paste0(srpath, 'ilexOutput.rdata'))
+
+ilex <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+remove(output)
+
+# lindera
+#load(paste0(srpath, 'linderaOutput.rdata'))
+
+lindera <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+remove(output)
+
+# liriodendron
+load(paste0(srpath, 'liriodendronOutput.rdata'))
+
+liriodendron <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'liriTuli') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+remove(output)
+
+# liquidambar
+load(paste0(srpath, 'liquidambarOutput.rdata'))
+
+liquidambar <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'liqiStyr') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+remove(output)
+
+# nyssa
+load(paste0(srpath, 'nyssaOutput.rdata'))
+
+nyssa <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'nyssSylv') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+remove(output)
+
+# oxydendrum
+load(paste0(srpath, 'oxydendrumOutput.rdata'))
+
+oxydendrum <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'oxydArbo') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+remove(output)
+
+# picea
+load(paste0(srpath, 'piceaOutput.rdata'))
+
+picea <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+remove(output)
+
+# pinus
+load(paste0(srpath, 'pinusOutput.rdata'))
+
+pinus <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+remove(output)
+
+# quercus
+load(paste0(srpath, 'quercusOutput.rdata'))
+
+quercus <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+remove(output)
+
+# rhododendron
+#load(paste0(srpath, 'rhododendronOutput.rdata'))
+
+rhododendron <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+remove(output)
+
+# tsuga
+load(paste0(srpath, 'tsugaOutput.rdata'))
+
+tsuga <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'tsugCana') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+remove(output)
+
+params <- bind_rows(betula, cornus, fagus, fraxinus, ilex, liquidambar, liriodendron, nyssa, oxydendrum, picea, pinus, quercus, tsuga) %>%
+  rename(intercept = '(Intercept)', defAnomaly_beta = defAnomaly, defSiteWinterTminSite_beta = 'defSite:winterTminSite', 
+         defSite_beta = defSite, diam_beta = diam, diamSq_beta = 'I(diam^2)', 
+         winterTminSite_beta = winterTminSite)
+
+write.csv(params, file = paste0(sppath, 'params.csv'), row.names = FALSE)
+
+```
+
+```{r covariates}
+cppath <- '/Users/taylorminich/Documents/grad/mp/data/covariates/processed/'
+ppath <- '/Users/taylorminich/Documents/grad/mp/data/plots/'
+
+ppt <- read.csv(paste0(cppath, 'ppt.csv')) %>%
+  mutate(date = ymd(date))
+pet <- read.csv(paste0(cppath, 'pet.csv')) %>%
+  mutate(date = ymd(date))
+tmin <- read.csv(paste0(cppath, 'tmin.csv')) %>%
+  mutate(date = ymd(date))
+plots <- read.csv(paste0(ppath, 'plots.csv')) %>%
+  select(plotID, lon, lat) %>%
+  mutate(siteID = substr(plotID, 1, 4))
+
+GEEcoords <- plots %>%
+  geo_left_join(ppt, max_dist = 0.3, distance_col = 'distance') %>%
+  rename(lon = lon.y, lat = lat.y) %>%
+  select(plotID, lon, lat, distance, siteID) %>%
+  distinct() %>%
+  group_by(plotID) %>%
+  filter(distance %in% min(distance)) %>%
+  select(-distance)
+
+cov <- GEEcoords %>%
+  left_join(ppt, by = c('lat', 'lon')) %>%
+  left_join(tmin, by = c('date', 'lat', 'lon')) %>%
+  left_join(pet, by = c('date', 'lat', 'lon')) %>%
+  select(-siteID, -lon, -lat) %>%
+  group_by(plotID, month(date)) %>%
+  mutate(pet= if_else(is.na(pet), mean(pet, na.rm = TRUE), pet)) %>%
+  ungroup() %>%
+  select(-'month(date)')
+
+
+write.csv(cov, file = paste0(cppath, 'cov.csv'), row.names = FALSE)
+```

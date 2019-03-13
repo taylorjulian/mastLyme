@@ -1,0 +1,188 @@
+---
+output: html_document
+---
+
+```{r paths}
+rpath <- '/Users/taylorminich/Documents/grad/mp/results/'
+```
+
+```{r mammal-tick lag model}
+load(paste0(rpath, 'mtTotalLag2Output.rdata'))
+
+# sensitivity boxplots
+sens <- gjamSensitivity(mtTotalLag2Output)
+sens <- as.data.frame(sens)
+sens <- sens %>%
+  gather('predictor', 'value') %>%
+  mutate(species = substr(predictor, 1, 4), year = substr(predictor, 5, 8))
+
+ggplot(sens, aes(x = species, y = value)) +
+  geom_boxplot() + 
+  facet_wrap(vars(year)) +
+  scale_y_continuous(trans='log10') +
+  theme_minimal()
+
+
+# parameter CI
+
+cred <- mtTotalLag2Output$parameters$betaStandXWTable %>%
+  rownames_to_column %>%
+  separate(rowname, c('tick','predictor'), sep = '_') %>%
+  mutate(tick = factor(tick, levels = c('larvaCount', 'nymphCount', 'adultCount'))) %>%
+  mutate(bottom = if_else(CI_025 < 0, -1, 1), top = if_else(CI_975 < 0, -1, 1)) %>%
+  mutate(sig = bottom + top) %>%
+  mutate(significance = as.factor(case_when(sig == -2 ~ 'negative relationship',
+                                  sig == 0 ~ 'non-significant',
+                                  sig == 2 ~ 'positive relationship'))) %>%
+  select(-sig, -bottom, -top)
+
+tickLab <- c(`adultCount` = 'adult stage',
+             `larvaCount` = 'larva stage',
+             `nymphCount` = 'nymph stage')
+
+ggplot(cred, aes(x = predictor, y = Estimate, col = significance)) + 
+  geom_point() +
+  facet_wrap(vars(tick), labeller = labeller(tick = tickLab)) +
+  geom_errorbar(aes(ymin = CI_025, ymax = CI_975)) +
+  scale_color_manual(values=c("#999999", "#56B4E9")) +
+  theme_minimal() +
+  theme(legend.position = 'bottom')
+```
+
+```{r mammal-tick species model with all species from host genera}
+load(paste0(rpath, 'mtHostOutput.rdata'))
+
+# sensitivity boxplots
+sens <- gjamSensitivity(mtHostOutput)
+sens <- as.data.frame(sens)
+sens <- sens %>%
+  gather('predictor', 'value') %>%
+  mutate(species = substr(predictor, 1, 4), year = substr(predictor, 5, 8))
+
+ggplot(sens, aes(x = species, y = value)) +
+  geom_boxplot() + 
+  facet_wrap(vars(year)) +
+  scale_y_continuous(trans='log10') +
+  theme_minimal()
+
+# parameter CI
+
+cred <- mtHostOutput$parameters$betaStandXWTable %>%
+  rownames_to_column %>%
+  separate(rowname, c('tick','predictor'), sep = '_') %>%
+  mutate(tick = factor(tick, levels = c('larvaCount', 'nymphCount', 'adultCount'))) %>%
+  mutate(species = substr(predictor, 1, 4), year = substr(predictor, 5, 8)) %>%
+  select(-predictor) %>%
+  mutate(bottom = if_else(CI_025 < 0, -1, 1), top = if_else(CI_975 < 0, -1, 1)) %>%
+  mutate(sig = bottom + top) %>%
+  mutate(significance = as.factor(case_when(sig == -2 ~ 'negative relationship',
+                                  sig == 0 ~ 'non-significant',
+                                  sig == 2 ~ 'positive relationship'))) %>%
+  select(-sig, -bottom, -top)
+
+tickLab <- c(`adultCount` = 'adult stage',
+             `larvaCount` = 'larva stage',
+             `nymphCount` = 'nymph stage')
+
+ggplot(cred, aes(x = species, y = Estimate, col = significance)) + 
+  geom_point() +
+  facet_wrap(tick ~ year, labeller = labeller(tick = tickLab)) +
+  geom_errorbar(aes(ymin = CI_025, ymax = CI_975)) +
+  scale_color_manual(values=c("#E69F00", "#999999", "#56B4E9")) +
+  theme_minimal() +
+  theme(legend.position = 'bottom') +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+```{r mammal-tick species model with reduced species from host genera}
+load(paste0(rpath, 'mtHostOutput1.rdata'))
+
+# sensitivity boxplots
+sens <- gjamSensitivity(mtHostOutput1)
+sens <- as.data.frame(sens)
+sens <- sens %>%
+  gather('predictor', 'value') %>%
+  mutate(species = substr(predictor, 1, 4), year = substr(predictor, 5, 8))
+
+ggplot(sens, aes(x = species, y = value)) +
+  geom_boxplot() + 
+  facet_wrap(vars(year)) +
+  scale_y_continuous(trans='log10') +
+  theme_minimal()
+
+# parameter CI
+
+cred <- mtHostOutput1$parameters$betaStandXWTable %>%
+  rownames_to_column %>%
+  separate(rowname, c('tick','predictor'), sep = '_') %>%
+  mutate(tick = factor(tick, levels = c('larvaCount', 'nymphCount', 'adultCount'))) %>%
+  mutate(species = substr(predictor, 1, 4), year = substr(predictor, 5, 8)) %>%
+  select(-predictor) %>%
+  mutate(bottom = if_else(CI_025 < 0, -1, 1), top = if_else(CI_975 < 0, -1, 1)) %>%
+  mutate(sig = bottom + top) %>%
+  mutate(significance = as.factor(case_when(sig == -2 ~ 'negative relationship',
+                                  sig == 0 ~ 'non-significant',
+                                  sig == 2 ~ 'positive relationship'))) %>%
+  select(-sig, -bottom, -top)
+
+tickLab <- c(`adultCount` = 'adult stage',
+             `larvaCount` = 'larva stage',
+             `nymphCount` = 'nymph stage')
+
+ggplot(cred, aes(x = species, y = Estimate, col = significance)) + 
+  geom_point() +
+  facet_wrap(tick ~ year, labeller = labeller(tick = tickLab)) +
+  geom_errorbar(aes(ymin = CI_025, ymax = CI_975)) +
+  scale_color_manual(values=c("#E69F00", "#999999", "#56B4E9")) +
+  theme_minimal() +
+  theme(legend.position = 'bottom') +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+```{r mammal-tick species model with just host species}
+load(paste0(rpath, 'mtHostOutput2.rdata'))
+
+# sensitivity boxplots
+sens <- gjamSensitivity(mtHostOutput2)
+sens <- as.data.frame(sens)
+sens <- sens %>%
+  gather('predictor', 'value') %>%
+  mutate(species = substr(predictor, 1, 4), year = substr(predictor, 5, 8))
+
+ggplot(sens, aes(x = species, y = value)) +
+  geom_boxplot() + 
+  facet_wrap(vars(year)) +
+  scale_y_continuous(trans='log10') +
+  theme_minimal()
+
+# parameter CI
+
+cred <- mtHostOutput2$parameters$betaStandXWTable %>%
+  rownames_to_column %>%
+  separate(rowname, c('tick','predictor'), sep = '_') %>%
+  mutate(tick = factor(tick, levels = c('larvaCount', 'nymphCount', 'adultCount'))) %>%
+  mutate(species = substr(predictor, 1, 4), year = substr(predictor, 5, 8)) %>%
+  select(-predictor) %>%
+  mutate(bottom = if_else(CI_025 < 0, -1, 1), top = if_else(CI_975 < 0, -1, 1)) %>%
+  mutate(sig = bottom + top) %>%
+  mutate(significance = as.factor(case_when(sig == -2 ~ 'negative relationship',
+                                  sig == 0 ~ 'non-significant',
+                                  sig == 2 ~ 'positive relationship'))) %>%
+  select(-sig, -bottom, -top)
+
+tickLab <- c(`adultCount` = 'adult stage',
+             `larvaCount` = 'larva stage',
+             `nymphCount` = 'nymph stage')
+
+ggplot(cred, aes(x = species, y = Estimate, col = significance)) + 
+  geom_point() +
+  facet_wrap(tick ~ year, labeller = labeller(tick = tickLab)) +
+  geom_errorbar(aes(ymin = CI_025, ymax = CI_975)) +
+  scale_color_manual(values=c("#999999", "#56B4E9")) +
+  theme_minimal() +
+  theme(legend.position = 'bottom') +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```

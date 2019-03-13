@@ -1,0 +1,238 @@
+---
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(lubridate)
+library(scales)
+library(ggplot2)
+```
+
+```{r write mammal data}
+sites <- c('BART', 'BLAN', 'DSNY', 'GRSM', 'HARV', 'JERC', 'KONZ', 'ORNL', 'OSBS', 'SCBI', 'SERC', 'UKFS')
+
+writeMammalData <- function(site){
+  mppath <- '/Users/taylorminich/Documents/grad/mp/data/mammals/processed/'
+  mapath <- '/Users/taylorminich/Documents/grad/mp/data/mammals/abundance/'
+
+  assign(site, read.csv(paste0(mppath, site, '.csv'), header = TRUE))
+  
+  abundance <- get(site) %>% 
+    count(collectDate, plotID, taxonID, trapStatus == '5 - capture') %>%
+    spread(key = 'trapStatus == "5 - capture"', value = n) %>%
+    spread(key = taxonID, value = 'TRUE') %>%
+    replace(is.na(.), 0) %>%
+    group_by(collectDate, plotID) %>%
+    summarise_all(funs(sum))
+  
+  abundance$totalTraps <- rowSums(abundance[,3:length(abundance)])
+  
+  abundance <- abundance %>%
+    select(-'FALSE', -V1)
+  
+  info <- get(site) %>%
+    select(domainID, siteID, plotID, nlcdClass, elevation, lat, lon, geodeticDatum)
+  
+  x <- left_join(abundance, info)
+  x <- distinct(x)
+  
+  write.csv(x, file = paste0(mapath, site, '.csv'), row.names = FALSE)
+}
+
+#for(i in sites){
+  #writeMammalData(i)
+#}
+```
+
+```{r merge mammals}
+mapath <- '/Users/taylorminich/Documents/grad/mp/data/mammals/abundance/'
+
+BART <- read.csv(paste0(mapath, 'BART', '.csv'))
+BLAN <- read.csv(paste0(mapath, 'BLAN', '.csv'))
+DSNY <- read.csv(paste0(mapath, 'DSNY', '.csv'))
+GRSM <- read.csv(paste0(mapath, 'GRSM', '.csv'))
+HARV <- read.csv(paste0(mapath, 'HARV', '.csv'))
+JERC <- read.csv(paste0(mapath, 'JERC', '.csv'))
+KONZ <- read.csv(paste0(mapath, 'KONZ', '.csv'))
+ORNL <- read.csv(paste0(mapath, 'ORNL', '.csv'))
+OSBS <- read.csv(paste0(mapath, 'OSBS', '.csv'))
+SCBI <- read.csv(paste0(mapath, 'SCBI', '.csv'))
+SERC <- read.csv(paste0(mapath, 'SERC', '.csv'))
+UKFS <- read.csv(paste0(mapath, 'UKFS', '.csv'))
+
+mammal <- bind_rows(BART, BLAN, DSNY, GRSM, HARV, JERC, KONZ, ORNL, OSBS, SCBI, SERC, UKFS) %>%
+  replace(is.na(.), 0) %>%
+  select(collectDate, plotID, domainID, siteID, nlcdClass, elevation, lat, lon, geodeticDatum, totalTraps, everything())
+
+mammal$total <- rowSums(mammal[,11:length(mammal)])
+mammal <- mammal %>%
+  select(sort(current_vars())) %>%
+  select(collectDate, plotID, domainID, siteID, nlcdClass, elevation, lat, lon, geodeticDatum, totalTraps, total, everything()) 
+mammal$collectDate <- ymd(mammal$collectDate)
+#write.csv(mammal, file = paste0(mapath, 'mammal.csv'), row.names = FALSE)
+```
+
+```{r mammal species}
+code <- colnames(mammal)[12:length(mammal)]
+
+BART <- read.csv(paste0(mppath, 'BART', '.csv'))
+BLAN <- read.csv(paste0(mppath, 'BLAN', '.csv'))
+DSNY <- read.csv(paste0(mppath, 'DSNY', '.csv'))
+GRSM <- read.csv(paste0(mppath, 'GRSM', '.csv'))
+HARV <- read.csv(paste0(mppath, 'HARV', '.csv'))
+JERC <- read.csv(paste0(mppath, 'JERC', '.csv'))
+KONZ <- read.csv(paste0(mppath, 'KONZ', '.csv'))
+ORNL <- read.csv(paste0(mppath, 'ORNL', '.csv'))
+OSBS <- read.csv(paste0(mppath, 'OSBS', '.csv'))
+SCBI <- read.csv(paste0(mppath, 'SCBI', '.csv'))
+SERC <- read.csv(paste0(mppath, 'SERC', '.csv'))
+UKFS <- read.csv(paste0(mppath, 'UKFS', '.csv'))
+species <- bind_rows(BART, BLAN, DSNY, GRSM, HARV, JERC, KONZ, ORNL, OSBS, SCBI, SERC, UKFS) %>%
+  select(scientificName) %>%
+  distinct() %>%
+  arrange(scientificName)
+species <- species[2:length(species$scientificName),]
+correctCode <- c(code[1:5], code[7], code[6], code[8:10], code[24], code[11:14], 
+                 code[17], code[15:16], code[18:23], code[25:34], code[42], code[35:39],
+                 code[41], code[40], code[43], code[45], code[44], code[46])
+
+mammalSpecies <- data.frame(species, correctCode)
+#write.csv(mammalSpecies, file = paste0(mapath, 'mammalSpecies.csv'), row.names = FALSE)
+```
+
+```{r plot mammal}
+
+ggplot(data = mammal) + 
+  geom_point(aes(x = collectDate, y = total/totalTraps, col = siteID), alpha = 1/10) +
+  geom_line(aes(x = collectDate, y = total/totalTraps, col = siteID), stat="smooth",method = "loess", alpha = 9/10) +
+  scale_x_date(breaks = pretty_breaks()) +
+  scale_y_continuous(limits = c(0, 1)) +
+  xlab('Collection date') +
+  ylab('Relative abundance') +
+  theme_minimal()
+```
+
+
+```{r write tick data}
+sites <- c('BART', 'BLAN', 'DSNY', 'GRSM', 'HARV', 'JERC', 'KONZ', 'ORNL', 'OSBS', 'SCBI', 'SERC', 'UKFS')
+
+writeTickData <- function(site){
+  tppath <- '/Users/taylorminich/Documents/grad/mp/data/ticks/processed/'
+  tapath <- '/Users/taylorminich/Documents/grad/mp/data/ticks/abundance/'
+  assign(site, read.csv(paste0(tppath, site, '.csv'), header = TRUE))
+
+  x <- get(site) %>% 
+    select(collectDate, plotID, adultCount, nymphCount, larvaCount, totalCount, totalSampledArea, targetTaxaPresent, 
+           domainID, siteID, nlcdClass, elevation, lat, lon, geodeticDatum)
+    write.csv(x, file = paste0(tapath, site, '.csv'), row.names = FALSE)
+}
+
+for(i in sites){
+  writeTickData(i)
+}
+```
+
+```{r merge ticks}
+tapath <- '/Users/taylorminich/Documents/grad/mp/data/ticks/abundance/'
+
+BART <- read.csv(paste0(tapath, 'BART', '.csv'))
+BLAN <- read.csv(paste0(tapath, 'BLAN', '.csv'))
+DSNY <- read.csv(paste0(tapath, 'DSNY', '.csv'))
+GRSM <- read.csv(paste0(tapath, 'GRSM', '.csv'))
+HARV <- read.csv(paste0(tapath, 'HARV', '.csv'))
+JERC <- read.csv(paste0(tapath, 'JERC', '.csv'))
+KONZ <- read.csv(paste0(tapath, 'KONZ', '.csv'))
+ORNL <- read.csv(paste0(tapath, 'ORNL', '.csv'))
+OSBS <- read.csv(paste0(tapath, 'OSBS', '.csv'))
+SCBI <- read.csv(paste0(tapath, 'SCBI', '.csv'))
+SERC <- read.csv(paste0(tapath, 'SERC', '.csv'))
+UKFS <- read.csv(paste0(tapath, 'UKFS', '.csv'))
+
+tick <- rbind(BART, BLAN, DSNY, GRSM, HARV, JERC, KONZ, ORNL, OSBS, SCBI, SERC, UKFS)
+tick$collectDate <- ymd(tick$collectDate)
+tick <- na.omit(tick)
+#write.csv(tick, file = paste0(tapath, 'tick.csv'), row.names = FALSE)
+```
+
+```{r plot tick}
+ggplot(data = tick) + 
+  geom_point(aes(x = collectDate, y = totalCount/totalSampledArea, col = siteID), alpha = 1/5) + 
+  geom_line(aes(x = collectDate, y = totalCount/totalSampledArea, col = siteID), stat="smooth",method = "loess", alpha = 9/10) +
+  scale_x_date(breaks = pretty_breaks()) + 
+  scale_y_continuous(limits = c(0, 1)) + # scale cuts off outliers from view to better visualize trends
+  xlab('Collection date') + 
+  ylab('Relative abundance') +
+  theme_minimal()
+```
+
+```{r plot tick on top of mammals}
+ggplot(data = NULL) + 
+  geom_point(data = mammal, aes(x = collectDate, y = total/totalTraps), colour = '#56B4E9', alpha = 1/10) +
+  geom_point(data = tick, aes(x = collectDate, y = totalCount/totalSampledArea), colour = '#009E73', alpha = 1/10) +
+  geom_line(data = mammal, aes(x = collectDate, y = total/totalTraps, colour = 'mammal'), stat="smooth",method = "loess", alpha = 9/10) +
+  geom_line(data = tick, aes(x = collectDate, y = totalCount/totalSampledArea, colour = 'tick'), 
+            stat="smooth",method = "loess", alpha = 9/10) +
+  scale_y_continuous(limits = c(0, 1)) +
+  xlab('Collection date') +
+  ylab('Relative abundance') +
+  facet_wrap(vars(siteID)) + 
+  scale_colour_manual(name = '', values = c(mammal = '#56B4E9', tick = '#009E73')) +
+  theme_minimal() +
+  theme(legend.position = 'bottom')
+  
+```
+
+```{r write plant data}
+pppath <- '/Users/taylorminich/Documents/grad/mp/data/plants/processed1/'
+papath <- '/Users/taylorminich/Documents/grad/mp/data/plants/abundance/'
+plots <- read.csv(paste0(pppath, 'plots.csv'), header = TRUE)
+species <- read.csv(paste0(pppath, 'species.csv'), header = TRUE)
+
+genera <- c('Acer', 'Asimina', 'Betula', 'Carpinus', 'Carya', 'Cornus', 'Fagus', 'Fraxinus', 'Ilex', 'Lindera', 'Liriodendron', 
+            'Liquidambar', 'Nyssa', 'Oxydendron', 'Picea', 'Pinus', 'Quercus', 'Rhododendron', 'Tsuga')
+
+myPlots <- c('BART_028', 'BART_012', 'BART_007', 'BART_011', 'BART_001', 'BART_015', 'BLAN_011', 'BLAN_001', 'BLAN_009', 'BLAN_018',
+             'GRSM_013', 'GRSM_004', 'GRSM_014', 'GRSM_008', 'GRSM_011', 'GRSM_003', 'GRSM_015', 'HARV_001', 'HARV_006', 'HARV_021', 'HARV_010', 
+             'HARV_008', 'HARV_023', 'HARV_022', 'ORNL_002', 'ORNL_003', 'ORNL_007', 'ORNL_012', 'ORNL_001', 'ORNL_027', 'SCBI_016', 'SCBI_002', 
+             'SCBI_013', 'SCBI_008', 'SCBI_004', 'SCBI_003', 'SERC_001', 'SERC_017', 'SERC_014', 'SERC_002', 'SERC_011', 'SERC_003')
+
+plant <- plots %>%
+  left_join(species) %>%
+  filter(genus %in% genera) %>%
+  filter(plotID %in% myPlots) %>%
+  select(siteID, plotID, genus) %>%
+  count(siteID, plotID, genus) %>%
+  spread(key = genus, value = n) %>%
+  replace(is.na(.), 0)
+  
+
+
+
+#write.csv(plant, file = paste0(papath, 'plant.csv'), row.names = FALSE)
+```
+
+```{r plot plants}
+
+df <- plots %>%
+  left_join(species) %>%
+  select(siteID, genus, plotID, code) %>%
+  filter(siteID == 'BART' | siteID == 'SCBI' | siteID == 'SERC' | siteID == 'BLAN' | siteID == 'HARV' | siteID == 'GRSM' | siteID == 'ORNL') %>%
+  count(siteID, genus) %>%
+  arrange(siteID, desc(n)) %>%
+  group_by(siteID) %>%
+  mutate(prop = n/sum(n)) %>%
+  ungroup() %>%
+  mutate(order = row_number())
+
+ggplot(df) +
+  geom_bar(aes(x = order, y = prop), stat = 'identity') +
+  facet_wrap(vars(siteID), scales = 'free_x', ncol = 2) +
+  scale_x_continuous(
+    breaks = df$order,
+    labels = df$genus,
+    expand = c(0,0)
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```

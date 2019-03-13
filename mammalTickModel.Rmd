@@ -1,0 +1,837 @@
+---
+output: html_document
+---
+
+```{r paths}
+mapath <- '/Users/taylorminich/Documents/grad/mp/data/mammals/abundance/'
+tapath <- '/Users/taylorminich/Documents/grad/mp/data/ticks/abundance/'
+```
+
+```{r make df}
+mammal <- read.csv(paste0(mapath, 'mammal.csv'))
+tick <- read.csv(paste0(tapath, 'tick.csv'))
+
+mplotBART <- c('BART_062', 'BART_012', 'BART_007', 'BART_084', 'BART_001', 'BART_015')
+tplotBART <- c('BART_019', 'BART_029', 'BART_010', 'BART_011', 'BART_002', 'BART_015')
+siteBART <- 'BART'
+
+mplotBLAN <- c('BLAN_002', 'BLAN_001', 'BLAN_009', 'BLAN_003')
+tplotBLAN <-c('BLAN_002', 'BLAN_015', 'BLAN_004', 'BLAN_012')
+siteBLAN <- 'BLAN'
+
+mplotDSNY <- c('DSNY_001', 'DSNY_005', 'DSNY_006', 'DSNY_036', 'DSNY_016', 'DSNY_009', 'DSNY_004')
+tplotDSNY <- c('DSNY_001', 'DSNY_005', 'DSNY_006', 'DSNY_021', 'DSNY_008', 'DSNY_014', 'DSNY_002')
+siteDSNY <- 'DSNY'
+
+mplotGRSM <- c('GRSM_013', 'GRSM_070', 'GRSM_014', 'GRSM_069', 'GRSM_071', 'GRSM_003', 'GRSM_015')
+tplotGRSM <- c('GRSM_006', 'GRSM_004', 'GRSM_010', 'GRSM_009', 'GRSM_005', 'GRSM_003', 'GRSM_015')
+siteGRSM <- 'GRSM'
+
+mplotHARV <- c('HARV_001', 'HARV_006', 'HARV_021', 'HARV_010', 'HARV_008', 'HARV_023', 'HARV_032')
+tplotHARV <- c('HARV_001', 'HARV_006', 'HARV_002', 'HARV_026', 'HARV_020', 'HARV_004', 'HARV_022')
+siteHARV <- 'HARV'
+
+mplotJERC <- c('JERC_002', 'JERC_005', 'JERC_006', 'JERC_009', 'JERC_003', 'JERC_019')
+tplotJERC <- c('JERC_002', 'JERC_005', 'JERC_004', 'JERC_010', 'JERC_034', 'JERC_044')
+siteJERC <- 'JERC'
+
+mplotKONZ <- c('KONZ_001', 'KONZ_002', 'KONZ_008', 'KONZ_027', 'KONZ_006', 'KONZ_005')
+tplotKONZ <- c('KONZ_001', 'KONZ_002', 'KONZ_004', 'KONZ_009', 'KONZ_025', 'KONZ_007')
+siteKONZ <- 'KONZ'
+
+mplotORNL <- c('ORNL_002', 'ORNL_003', 'ORNL_007', 'ORNL_039', 'ORNL_001', 'ORNL_027')
+tplotORNL <- c('ORNL_002', 'ORNL_003', 'ORNL_007', 'ORNL_009', 'ORNL_040', 'ORNL_008')
+siteORNL <- 'ORNL'
+
+mplotOSBS <- c('OSBS_002', 'OSBS_003', 'OSBS_004', 'OSBS_005', 'OSBS_023', 'OSBS_012')
+tplotOSBS <- c('OSBS_002', 'OSBS_003', 'OSBS_004', 'OSBS_005', 'OSBS_001', 'OSBS_022')
+siteOSBS <- 'OSBS'
+
+mplotSCBI <- c('SCBI_039', 'SCBI_002', 'SCBI_035', 'SCBI_008', 'SCBI_004', 'SCBI_003')
+tplotSCBI <- c('SCBI_039', 'SCBI_002', 'SCBI_013', 'SCBI_005', 'SCBI_006', 'SCBI_007')
+siteSCBI <- 'SCBI'
+
+mplotSERC <- c('SERC_008', 'SERC_007', 'SERC_014', 'SERC_015', 'SERC_011', 'SERC_031')
+tplotSERC <- c('SERC_001', 'SERC_023', 'SERC_006', 'SERC_002', 'SERC_012', 'SERC_005')
+siteSERC <- 'SERC'
+
+mplotUKFS <- c('UKFS_003', 'UKFS_004', 'UKFS_018', 'UKFS_007', 'UKFS_009', 'UKFS_010')
+tplotUKFS <- c('UKFS_003', 'UKFS_004', 'UKFS_018', 'UKFS_001', 'UKFS_030', 'UKFS_002')
+siteUKFS <- 'UKFS'
+
+allSites <- data.frame(c(mplotBART, mplotBLAN, mplotDSNY, mplotGRSM, mplotHARV, mplotJERC, mplotKONZ, mplotORNL, mplotOSBS, mplotSCBI, mplotSERC, mplotUKFS), c(tplotBART, tplotBLAN, tplotDSNY, tplotGRSM, tplotHARV, tplotJERC, tplotKONZ, tplotORNL, tplotOSBS, tplotSCBI, tplotSERC, tplotUKFS))
+colnames(allSites) <- c('mammal', 'tick')
+
+mplots <- levels(mammal$pair)
+tplots <- levels(tick$pair)
+
+
+mdf <- function(site, mplot, tplot){
+  pairs <- data.frame(mplot, tplot)
+  pairs$mplot <- as.character(pairs$mplot)
+  pairs$tplot <- as.character(pairs$tplot)
+  pairs <- pairs %>%
+   mutate(pair = paste(mplot, tplot, sep = '_'))
+
+  assign(site, read.csv(paste0(mapath, site, '.csv')))  %>%
+    select(plotID, collectDate, totalTraps, everything()) %>%
+    select(-domainID, -siteID, -geodeticDatum, -nlcdClass, -elevation, -lat, -lon) %>%
+    mutate(total = rowSums(.[,4:length(.)])) %>%
+    left_join(pairs, by = c('plotID' = 'mplot')) %>%
+    na.omit() %>%
+    select(pair, collectDate, total, totalTraps, everything()) %>%
+    assign(site, ., envir = .GlobalEnv)
+
+}
+
+mdf(siteBART, mplotBART, tplotBART)
+mdf(siteBLAN, mplotBLAN, tplotBLAN)
+mdf(siteDSNY, mplotDSNY, tplotDSNY)
+mdf(siteGRSM, mplotGRSM, tplotGRSM)
+mdf(siteHARV, mplotHARV, tplotHARV)
+mdf(siteJERC, mplotJERC, tplotJERC)
+mdf(siteKONZ, mplotKONZ, tplotKONZ)
+mdf(siteORNL, mplotORNL, tplotORNL)
+mdf(siteOSBS, mplotOSBS, tplotOSBS)
+mdf(siteSCBI, mplotSCBI, tplotSCBI)
+mdf(siteSERC, mplotSERC, tplotSERC)
+mdf(siteUKFS, mplotUKFS, tplotUKFS)
+
+
+mammal <- bind_rows(BART, BLAN, DSNY, GRSM, HARV, JERC, KONZ, ORNL, OSBS, SCBI, SERC, UKFS) %>%
+  replace(is.na(.), 0) %>%
+  mutate(year = year(collectDate)) %>%
+  select(pair, year, total, totalTraps, everything()) %>%
+  select(-collectDate, -plotID, -tplot) %>%
+  group_by(year, pair) %>%
+  summarise_all(sum)
+
+tdf <- function(site, mplot, tplot){
+  pairs <- data.frame(mplot, tplot)
+  pairs$mplot <- as.character(pairs$mplot)
+  pairs$tplot <- as.character(pairs$tplot)
+  pairs <- pairs %>%
+    mutate(pair = paste(mplot, tplot, sep = '_'))
+  
+  assign(site, read.csv(paste0(tapath, site, '.csv'))) %>%
+    select(plotID, collectDate, everything()) %>%
+    select(-domainID, -geodeticDatum, -nlcdClass, -elevation,- lat,-lon, -targetTaxaPresent) %>%
+    left_join(pairs, by = c('plotID' = 'tplot')) %>%
+    assign(site, ., envir = .GlobalEnv)
+}
+
+tdf(siteBART, mplotBART, tplotBART)
+tdf(siteBLAN, mplotBLAN, tplotBLAN)
+tdf(siteDSNY, mplotDSNY, tplotDSNY)
+tdf(siteGRSM, mplotGRSM, tplotGRSM)
+tdf(siteHARV, mplotHARV, tplotHARV)
+tdf(siteJERC, mplotJERC, tplotJERC)
+tdf(siteKONZ, mplotKONZ, tplotKONZ)
+tdf(siteORNL, mplotORNL, tplotORNL)
+tdf(siteOSBS, mplotOSBS, tplotOSBS)
+tdf(siteSCBI, mplotSCBI, tplotSCBI)
+tdf(siteSERC, mplotSERC, tplotSERC)
+tdf(siteUKFS, mplotUKFS, tplotUKFS)
+
+tick <- bind_rows(BART, BLAN, DSNY, GRSM, HARV, JERC, KONZ, ORNL, OSBS, SCBI, SERC, UKFS) %>%
+  na.omit() %>%
+  mutate(year = year(collectDate)) %>%
+  select(pair, year, everything()) %>%
+  select(-collectDate, -siteID, -mplot, -plotID) %>%
+  group_by(year, pair) %>%
+  summarise_all(sum)
+
+#tick <- tick %>%
+  #filter(year == '2018')
+```
+
+```{r model with all species and years}
+ydata <- tick %>%
+  ungroup %>%
+  select(-year, -totalSampledArea, -totalCount) %>%
+  column_to_rownames('pair')
+
+ydata <- data.frame(ydata)
+
+pairs <- rownames(ydata)
+
+xdata <- mammal %>%
+  ungroup %>%
+  filter(year == '2018' | year == '2017' | year == '2016')%>%
+  mutate_if(is.integer, funs(as.numeric(.))) %>%
+  mutate(year = as.character(year)) %>%
+  select(-totalTraps, totalTraps) %>%
+  mutate_if(is.numeric, funs(./totalTraps)) %>%
+  select(-totalTraps, -OTHE, -total, -GLSA, -GLVO, -SOCI, -SOFU, -TAHU, -CRPA, -CRSP, -MIPE, -MIPI, -RARA, -ZAHU, -BLCA, -ORPA, 
+         -REHU, -OCNU, -ROSP,-MUER, -MUFR, -MUNI, -PEME, -BLSP, -DIVI, -MRSP, -PEPO, -SOLO, -SUSP, -REME, -SPTR, -SYFL, -SCCA, 
+         -SRSP) %>%
+  group_by(pair, year) %>%
+  gather(variable, value, -(year:pair)) %>%
+  unite(tmp, variable, year) %>%
+  spread(tmp, value) %>%
+  replace(is.na(.), 0) %>%
+  filter(pair %in% pairs) %>%
+  column_to_rownames('pair') %>%
+  ungroup %>%
+  select(everything())
+
+xdata <- data.frame(xdata)
+
+edata <- tick %>%
+  ungroup %>%
+  select(pair, totalSampledArea) %>%
+  mutate(adultCount = totalSampledArea, nymphCount = totalSampledArea, larvaCount = totalSampledArea) %>%
+  select(-totalSampledArea) %>%
+  column_to_rownames('pair')
+
+paste(names(xdata), collapse='+')
+  
+edata <- as.matrix(edata)
+S <- length(ydata)
+n <- length(ydata$larvaCount)
+ef <- list(columns = 1:S, values = edata)
+formula <- as.formula(~ BLBR_2016+BLBR_2017+BLBR_2018+BLHY_2016+BLHY_2017+BLHY_2018+CHHI_2016+CHHI_2017+CHHI_2018+MIOC_2016+MIOC_2017+MIOC_2018+MUMU_2016+MUMU_2017+MUMU_2018+MYGA_2016+MYGA_2017+MYGA_2018+NAIN_2016+NAIN_2017+NAIN_2018+NEFL_2016+NEFL_2017+NEFL_2018+PEGO_2016+PEGO_2017+PEGO_2018+PELE_2016+PELE_2017+PELE_2018+PEMA_2016+PEMA_2017+PEMA_2018+PESP_2016+PESP_2017+PESP_2018+SIHI_2016+SIHI_2017+SIHI_2018+TAST_2016+TAST_2017+TAST_2018)
+modelList <- list(typeNames = c('DA'), effort = ef, ng = 10000, burnin = 1000)
+output <- gjam(formula = formula, xdata = xdata, ydata = ydata, modelList = modelList)
+plotPars <- list(GRIDPLOTS = TRUE, SAVEPLOTS = FALSE)
+gjamPlot(output = output, plotPars = plotPars)
+```
+
+```{r model with reduced species and years}
+ydata <- tick %>%
+  ungroup %>%
+  select(-year, -totalSampledArea, -totalCount) %>%
+  column_to_rownames('pair')
+
+ydata <- data.frame(ydata)
+
+pairs <- rownames(ydata)
+
+xdata <- mammal %>%
+  ungroup %>%
+  filter(year == '2018' | year == '2017' | year == '2016')%>%
+  mutate_if(is.integer, funs(as.numeric(.))) %>%
+  mutate(year = as.character(year)) %>%
+  select(-totalTraps, totalTraps) %>%
+  mutate_if(is.numeric, funs(./totalTraps)) %>%
+  select(-totalTraps, -OTHE, -total, -GLSA, -GLVO, -SOCI, -SOFU, -TAHU, -CRPA, -CRSP, -MIPE, -MIPI, -RARA, -ZAHU, -BLCA, -ORPA, 
+         -REHU, -OCNU, -ROSP,-MUER, -MUFR, -MUNI, -PEME, -BLSP, -DIVI, -MRSP, -PEPO, -SOLO, -SUSP, -REME, -SPTR, -SYFL, -SCCA, 
+         -SRSP, -MYGA, -NAIN, -MUMU, -NEFL, -PEGO, -SIHI, -BLHY, -CHHI, -MIOC) %>%
+  group_by(pair, year) %>%
+  gather(variable, value, -(year:pair)) %>%
+  unite(tmp, variable, year) %>%
+  spread(tmp, value) %>%
+  replace(is.na(.), 0) %>%
+  filter(pair %in% pairs) %>%
+  column_to_rownames('pair') %>%
+  ungroup %>%
+  select(everything())
+
+xdata <- data.frame(xdata)
+
+edata <- tick %>%
+  ungroup %>%
+  select(pair, totalSampledArea) %>%
+  mutate(adultCount = totalSampledArea, nymphCount = totalSampledArea, larvaCount = totalSampledArea) %>%
+  select(-totalSampledArea) %>%
+  column_to_rownames('pair')
+
+paste(names(xdata), collapse='+')
+  
+edata <- as.matrix(edata)
+S <- length(ydata)
+n <- length(ydata$larvaCount)
+ef <- list(columns = 1:S, values = edata)
+formula <- as.formula(~ BLBR_2016+BLBR_2017+BLBR_2018+PELE_2016+PELE_2017+PELE_2018+PEMA_2016+PEMA_2017+PEMA_2018+PESP_2016+PESP_2017+PESP_2018+TAST_2016+TAST_2017+TAST_2018)
+modelList <- list(typeNames = c('DA'), effort = ef, ng = 10000, burnin = 1000)
+output1 <- gjam(formula = formula, xdata = xdata, ydata = ydata, modelList = modelList)
+
+# gjam plots
+plotPars1 <- list(GRIDPLOTS = TRUE, SAVEPLOTS = FALSE)
+gjamPlot(output = output1, plotPars = plotPars1)
+```
+
+```{r model with total counts and t, t_1, t_2}
+t18 <- tick$pair[tick$year == 2018]
+m18 <- mammal$pair[mammal$year == 2018]
+m17 <- mammal$pair[mammal$year == 2017]
+m16 <- mammal$pair[mammal$year == 2016]
+set2018 <- Reduce(intersect, list(t18, m18, m17, m16))
+
+t17 <- tick$pair[tick$year == 2017]
+m17 <- mammal$pair[mammal$year == 2017]
+m16 <- mammal$pair[mammal$year == 2016]
+m15 <- mammal$pair[mammal$year == 2015]
+set2017 <- Reduce(intersect, list(t17, m17, m16, m15))
+
+t16 <- tick$pair[tick$year == 2016]
+m16 <- mammal$pair[mammal$year == 2016]
+m15 <- mammal$pair[mammal$year == 2015]
+m14 <- mammal$pair[mammal$year == 2014]
+set2016 <- Reduce(intersect, list(t16, m16, m15, m14))
+
+t15 <- tick$pair[tick$year == 2015]
+m15 <- mammal$pair[mammal$year == 2015]
+m14 <- mammal$pair[mammal$year == 2014]
+m13 <- mammal$pair[mammal$year == 2013]
+set2015 <- Reduce(intersect, list(t15, m15, m14, m13))
+
+tick2018 <- tick %>%
+  filter(pair %in% set2018) %>%
+  filter(year == 2018)
+
+tick2017 <- tick %>%
+  filter(pair %in% set2017) %>%
+  filter(year == 2017)
+
+tick2016 <- tick %>%
+  filter(pair %in% set2016) %>%
+  filter(year == 2016)
+
+tick2015 <- tick %>%
+  filter(pair %in% set2015) %>%
+  filter(year == 2015)
+
+tick <- bind_rows(tick2018, tick2017, tick2016, tick2015)
+
+mammal2018t <- mammal %>%
+  filter(pair %in% set2018) %>%
+  filter(year == 2018)
+
+mammal2017t <- mammal %>%
+  filter(pair %in% set2017) %>%
+  filter(year == 2017)
+
+mammal2016t <- mammal %>%
+  filter(pair %in% set2016) %>%
+  filter(year == 2016)
+
+mammal2015t <- mammal %>%
+  filter(pair %in% set2015) %>%
+  filter(year == 2015)
+
+mammalt <- bind_rows(mammal2018t, mammal2017t, mammal2016t, mammal2015t) %>%
+  mutate(abundance = total/totalTraps) %>%
+  ungroup() %>%
+  select(pair, abundance)
+
+mammal2017t_1 <- mammal %>%
+  filter(pair %in% set2018) %>%
+  filter(year == 2017)
+
+mammal2016t_1 <- mammal %>%
+  filter(pair %in% set2017) %>%
+  filter(year == 2016)
+
+mammal2015t_1 <- mammal %>%
+  filter(pair %in% set2016) %>%
+  filter(year == 2015)
+
+mammal2014t_1 <- mammal %>%
+  filter(pair %in% set2015) %>%
+  filter(year == 2014)
+
+mammalt_1 <- bind_rows(mammal2017t_1, mammal2016t_1, mammal2015t_1, mammal2014t_1) %>%
+  mutate(abundance = total/totalTraps) %>%
+  ungroup() %>%
+  select(pair, abundance)
+
+mammal2016t_2 <- mammal %>%
+  filter(pair %in% set2018) %>%
+  filter(year == 2016)
+
+mammal2015t_2 <- mammal %>%
+  filter(pair %in% set2017) %>%
+  filter(year == 2015)
+
+mammal2014t_2 <- mammal %>%
+  filter(pair %in% set2016) %>%
+  filter(year == 2014)
+
+mammal2013t_2 <- mammal %>%
+  filter(pair %in% set2015) %>%
+  filter(year == 2013)
+
+mammalt_2 <- bind_rows(mammal2016t_2, mammal2015t_2, mammal2014t_2, mammal2013t_2) %>%
+  mutate(abundance = total/totalTraps) %>%
+  ungroup() %>%
+  select(pair, abundance)
+
+xdata <- mammalt %>%
+  rename(t = abundance) %>%
+  mutate(t_1 = mammalt_1$abundance, t_2 = mammalt_2$abundance) %>%
+  select(-pair)
+xdata <- data.frame(xdata)
+
+ydata <- tick %>%
+  ungroup %>%
+  select(-year, -totalSampledArea, -totalCount) %>%
+  select(-pair)
+ydata <- data.frame(ydata)
+  
+edata <- tick %>%
+  ungroup %>%
+  select(pair, totalSampledArea) %>%
+  mutate(adultCount = totalSampledArea, nymphCount = totalSampledArea, larvaCount = totalSampledArea) %>%
+  select(-totalSampledArea) %>%
+  select(-pair)
+
+paste(names(xdata), collapse='+')
+  
+edata <- as.matrix(edata)
+S <- length(ydata)
+n <- length(ydata$larvaCount)
+ef <- list(columns = 1:S, values = edata)
+formula <- as.formula(~ t+t_1+t_2)
+modelList <- list(typeNames = c('DA'), effort = ef, ng = 10000, burnin = 1000)
+mtTotalLag3Output <- gjam(formula = formula, xdata = xdata, ydata = ydata, modelList = modelList)
+
+# gjam plots
+pl <- list(GRIDPLOTS = TRUE, SAVEPLOTS = TRUE)
+gjamPlot(output = mtTotalLag3Output, plotPars = pl)
+
+save(mtTotalLag3Output, file = 'mtTotalLag3Output.rdata')
+
+```
+
+```{r model with total counts and t, t_1}
+t18 <- tick$pair[tick$year == 2018]
+m18 <- mammal$pair[mammal$year == 2018]
+m17 <- mammal$pair[mammal$year == 2017]
+set2018 <- Reduce(intersect, list(t18, m18, m17))
+
+t17 <- tick$pair[tick$year == 2017]
+m17 <- mammal$pair[mammal$year == 2017]
+m16 <- mammal$pair[mammal$year == 2016]
+set2017 <- Reduce(intersect, list(t17, m17, m16))
+
+t16 <- tick$pair[tick$year == 2016]
+m16 <- mammal$pair[mammal$year == 2016]
+m15 <- mammal$pair[mammal$year == 2015]
+set2016 <- Reduce(intersect, list(t16, m16, m15))
+
+t15 <- tick$pair[tick$year == 2015]
+m15 <- mammal$pair[mammal$year == 2015]
+m14 <- mammal$pair[mammal$year == 2014]
+set2015 <- Reduce(intersect, list(t15, m15, m14))
+
+t14 <- tick$pair[tick$year == 2014]
+m14 <- mammal$pair[mammal$year == 2014]
+m13 <- mammal$pair[mammal$year == 2013]
+set2014 <- Reduce(intersect, list(t14, m14, m13))
+
+tick2018 <- tick %>%
+  filter(pair %in% set2018) %>%
+  filter(year == 2018)
+
+tick2017 <- tick %>%
+  filter(pair %in% set2017) %>%
+  filter(year == 2017)
+
+tick2016 <- tick %>%
+  filter(pair %in% set2016) %>%
+  filter(year == 2016)
+
+tick2015 <- tick %>%
+  filter(pair %in% set2015) %>%
+  filter(year == 2015)
+
+tick2014 <- tick %>%
+  filter(pair %in% set2014) %>%
+  filter(year == 2014)
+
+tick <- bind_rows(tick2018, tick2017, tick2016, tick2015, tick2014)
+
+mammal2018t <- mammal %>%
+  filter(pair %in% set2018) %>%
+  filter(year == 2018)
+
+mammal2017t <- mammal %>%
+  filter(pair %in% set2017) %>%
+  filter(year == 2017)
+
+mammal2016t <- mammal %>%
+  filter(pair %in% set2016) %>%
+  filter(year == 2016)
+
+mammal2015t <- mammal %>%
+  filter(pair %in% set2015) %>%
+  filter(year == 2015)
+
+mammal2014t <- mammal %>%
+  filter(pair %in% set2014) %>%
+  filter(year == 2014)
+
+mammalt <- bind_rows(mammal2018t, mammal2017t, mammal2016t, mammal2015t, mammal2014t) %>%
+  mutate(abundance = total/totalTraps) %>%
+  ungroup() %>%
+  select(pair, abundance)
+
+mammal2017t_1 <- mammal %>%
+  filter(pair %in% set2018) %>%
+  filter(year == 2017)
+
+mammal2016t_1 <- mammal %>%
+  filter(pair %in% set2017) %>%
+  filter(year == 2016)
+
+mammal2015t_1 <- mammal %>%
+  filter(pair %in% set2016) %>%
+  filter(year == 2015)
+
+mammal2014t_1 <- mammal %>%
+  filter(pair %in% set2015) %>%
+  filter(year == 2014)
+
+mammal2013t_1 <- mammal %>%
+  filter(pair %in% set2014) %>%
+  filter(year == 2013)
+
+mammalt_1 <- bind_rows(mammal2017t_1, mammal2016t_1, mammal2015t_1, mammal2014t_1, mammal2013t_1) %>%
+  mutate(abundance = total/totalTraps) %>%
+  ungroup() %>%
+  select(pair, abundance)
+
+xdata <- mammalt %>%
+  rename(t = abundance) %>%
+  mutate(t_1 = mammalt_1$abundance) %>%
+  select(-pair)
+xdata <- data.frame(xdata)
+
+ydata <- tick %>%
+  ungroup %>%
+  select(-year, -totalSampledArea, -totalCount) %>%
+  select(-pair)
+ydata <- data.frame(ydata)
+  
+edata <- tick %>%
+  ungroup %>%
+  select(pair, totalSampledArea) %>%
+  mutate(adultCount = totalSampledArea, nymphCount = totalSampledArea, larvaCount = totalSampledArea) %>%
+  select(-totalSampledArea) %>%
+  select(-pair)
+
+paste(names(xdata), collapse='+')
+  
+edata <- as.matrix(edata)
+S <- length(ydata)
+n <- length(ydata$larvaCount)
+ef <- list(columns = 1:S, values = edata)
+formula <- as.formula(~ t+t_1)
+modelList <- list(typeNames = c('DA'), effort = ef, ng = 10000, burnin = 1000)
+mtTotalLag2Output <- gjam(formula = formula, xdata = xdata, ydata = ydata, modelList = modelList)
+
+# gjam plots
+pl <- list(GRIDPLOTS = TRUE, SAVEPLOTS = TRUE)
+gjamPlot(output = mtTotalLag2Output, plotPars = pl)
+
+save(mtTotalLag2Output, file = 'mtTotalLag2Output.rdata')
+
+
+```
+
+```{r model with host species and lag t-1}
+t18 <- tick$pair[tick$year == 2018]
+m17 <- mammal$pair[mammal$year == 2017]
+set2018 <- Reduce(intersect, list(t18, m17))
+
+t17 <- tick$pair[tick$year == 2017]
+m16 <- mammal$pair[mammal$year == 2016]
+set2017 <- Reduce(intersect, list(t17, m16))
+
+t16 <- tick$pair[tick$year == 2016]
+m15 <- mammal$pair[mammal$year == 2015]
+set2016 <- Reduce(intersect, list(t16, m15))
+
+t15 <- tick$pair[tick$year == 2015]
+m14 <- mammal$pair[mammal$year == 2014]
+set2015 <- Reduce(intersect, list(t15, m14))
+
+t14 <- tick$pair[tick$year == 2014]
+m13 <- mammal$pair[mammal$year == 2013]
+set2014 <- Reduce(intersect, list(t14, m13))
+
+tick2018 <- tick %>%
+  filter(pair %in% set2018) %>%
+  filter(year == 2018)
+
+tick2017 <- tick %>%
+  filter(pair %in% set2017) %>%
+  filter(year == 2017)
+
+tick2016 <- tick %>%
+  filter(pair %in% set2016) %>%
+  filter(year == 2016)
+
+tick2015 <- tick %>%
+  filter(pair %in% set2015) %>%
+  filter(year == 2015)
+
+tick2014 <- tick %>%
+  filter(pair %in% set2014) %>%
+  filter(year == 2014)
+
+tick <- bind_rows(tick2018, tick2017, tick2016, tick2015, tick2014)
+
+mammal2018t <- mammal %>%
+  filter(pair %in% set2018) %>%
+  filter(year == 2017)
+
+mammal2017t <- mammal %>%
+  filter(pair %in% set2017) %>%
+  filter(year == 2016)
+
+mammal2016t <- mammal %>%
+  filter(pair %in% set2016) %>%
+  filter(year == 2015)
+
+mammal2015t <- mammal %>%
+  filter(pair %in% set2015) %>%
+  filter(year == 2014)
+
+mammal2014t <- mammal %>%
+  filter(pair %in% set2014) %>%
+  filter(year == 2013)
+
+xdata <- bind_rows(mammal2018t, mammal2017t, mammal2016t, mammal2015t, mammal2014t) %>%
+  ungroup() %>%
+  mutate_if(is.integer, funs(as.numeric(.))) %>%
+  select(-totalTraps, totalTraps, -year) %>%
+  mutate_if(is.numeric, funs(./totalTraps)) %>%
+  select(-totalTraps, -OTHE, -total, -GLSA, -GLVO, -CRPA, -CRSP, -MIPE, -MIPI, -RARA, -ZAHU, -ORPA, 
+         -REHU, -OCNU, -ROSP,-MUER, -MUFR, -MUNI, -DIVI, -MRSP, -SUSP, -REME, -SPTR, -SYFL, -SCCA, 
+         -SRSP, -MYGA, -NAIN, -MUMU, -NEFL, -SIHI, -CHHI, -MIOC, -pair, -TAHU, -BLSP, -SOLO)
+
+ydata <- tick %>%
+  ungroup %>%
+  select(-year, -totalSampledArea, -totalCount) %>%
+  select(-pair)
+ydata <- data.frame(ydata)
+  
+edata <- tick %>%
+  ungroup %>%
+  select(pair, totalSampledArea) %>%
+  mutate(adultCount = totalSampledArea, nymphCount = totalSampledArea, larvaCount = totalSampledArea) %>%
+  select(-totalSampledArea) %>%
+  select(-pair)
+
+paste(names(xdata), collapse='+')
+  
+edata <- as.matrix(edata)
+S <- length(ydata)
+n <- length(ydata$larvaCount)
+ef <- list(columns = 1:S, values = edata)
+formula <- as.formula(~ BLBR+PELE+PEMA+PESP+SOCI+SOFU+TAST+BLCA+PEGO+PEME+PEPO+BLHY)
+modelList <- list(typeNames = c('DA'), effort = ef, ng = 10000, burnin = 1000)
+mtHostOutput <- gjam(formula = formula, xdata = xdata, ydata = ydata, modelList = modelList)
+
+# gjam plots
+pl <- list(GRIDPLOTS = TRUE, SAVEPLOTS = TRUE)
+gjamPlot(output = mtHostOutput, plotPars = pl)
+
+save(mtHostOutput, file = 'mtHostOutput.rdata')
+```
+```{r model with reduced host species and lag t-1}
+t18 <- tick$pair[tick$year == 2018]
+m17 <- mammal$pair[mammal$year == 2017]
+set2018 <- Reduce(intersect, list(t18, m17))
+
+t17 <- tick$pair[tick$year == 2017]
+m16 <- mammal$pair[mammal$year == 2016]
+set2017 <- Reduce(intersect, list(t17, m16))
+
+t16 <- tick$pair[tick$year == 2016]
+m15 <- mammal$pair[mammal$year == 2015]
+set2016 <- Reduce(intersect, list(t16, m15))
+
+t15 <- tick$pair[tick$year == 2015]
+m14 <- mammal$pair[mammal$year == 2014]
+set2015 <- Reduce(intersect, list(t15, m14))
+
+t14 <- tick$pair[tick$year == 2014]
+m13 <- mammal$pair[mammal$year == 2013]
+set2014 <- Reduce(intersect, list(t14, m13))
+
+tick2018 <- tick %>%
+  filter(pair %in% set2018) %>%
+  filter(year == 2018)
+
+tick2017 <- tick %>%
+  filter(pair %in% set2017) %>%
+  filter(year == 2017)
+
+tick2016 <- tick %>%
+  filter(pair %in% set2016) %>%
+  filter(year == 2016)
+
+tick2015 <- tick %>%
+  filter(pair %in% set2015) %>%
+  filter(year == 2015)
+
+tick2014 <- tick %>%
+  filter(pair %in% set2014) %>%
+  filter(year == 2014)
+
+tick <- bind_rows(tick2018, tick2017, tick2016, tick2015, tick2014)
+
+mammal2018t <- mammal %>%
+  filter(pair %in% set2018) %>%
+  filter(year == 2017)
+
+mammal2017t <- mammal %>%
+  filter(pair %in% set2017) %>%
+  filter(year == 2016)
+
+mammal2016t <- mammal %>%
+  filter(pair %in% set2016) %>%
+  filter(year == 2015)
+
+mammal2015t <- mammal %>%
+  filter(pair %in% set2015) %>%
+  filter(year == 2014)
+
+mammal2014t <- mammal %>%
+  filter(pair %in% set2014) %>%
+  filter(year == 2013)
+
+xdata <- bind_rows(mammal2018t, mammal2017t, mammal2016t, mammal2015t, mammal2014t) %>%
+  ungroup() %>%
+  mutate_if(is.integer, funs(as.numeric(.))) %>%
+  select(-totalTraps, totalTraps, -year) %>%
+  mutate_if(is.numeric, funs(./totalTraps)) %>%
+  select(-totalTraps, -OTHE, -total, -GLSA, -GLVO, -CRPA, -CRSP, -MIPE, -MIPI, -RARA, -ZAHU, -ORPA, 
+         -REHU, -OCNU, -ROSP,-MUER, -MUFR, -MUNI, -DIVI, -MRSP, -SUSP, -REME, -SPTR, -SYFL, -SCCA, 
+         -SRSP, -MYGA, -NAIN, -MUMU, -NEFL, -SIHI, -CHHI, -MIOC, -pair, -TAHU, -BLSP, -SOLO, -PEME, -SOFU, -PEPO, -PEGO)
+
+ydata <- tick %>%
+  ungroup %>%
+  select(-year, -totalSampledArea, -totalCount) %>%
+  select(-pair)
+ydata <- data.frame(ydata)
+  
+edata <- tick %>%
+  ungroup %>%
+  select(pair, totalSampledArea) %>%
+  mutate(adultCount = totalSampledArea, nymphCount = totalSampledArea, larvaCount = totalSampledArea) %>%
+  select(-totalSampledArea) %>%
+  select(-pair)
+
+paste(names(xdata), collapse='+')
+  
+edata <- as.matrix(edata)
+S <- length(ydata)
+n <- length(ydata$larvaCount)
+ef <- list(columns = 1:S, values = edata)
+formula <- as.formula(~ BLBR+PELE+PEMA+PESP+SOCI+TAST+BLCA+BLHY)
+modelList <- list(typeNames = c('DA'), effort = ef, ng = 10000, burnin = 1000)
+mtHostOutput1 <- gjam(formula = formula, xdata = xdata, ydata = ydata, modelList = modelList)
+
+# gjam plots
+pl <- list(GRIDPLOTS = TRUE, SAVEPLOTS = TRUE)
+gjamPlot(output = mtHostOutput1, plotPars = pl)
+
+save(mtHostOutput1, file = 'mtHostOutput1.rdata')
+```
+
+```{r model with just host species and lag t-1}
+t18 <- tick$pair[tick$year == 2018]
+m17 <- mammal$pair[mammal$year == 2017]
+set2018 <- Reduce(intersect, list(t18, m17))
+
+t17 <- tick$pair[tick$year == 2017]
+m16 <- mammal$pair[mammal$year == 2016]
+set2017 <- Reduce(intersect, list(t17, m16))
+
+t16 <- tick$pair[tick$year == 2016]
+m15 <- mammal$pair[mammal$year == 2015]
+set2016 <- Reduce(intersect, list(t16, m15))
+
+t15 <- tick$pair[tick$year == 2015]
+m14 <- mammal$pair[mammal$year == 2014]
+set2015 <- Reduce(intersect, list(t15, m14))
+
+t14 <- tick$pair[tick$year == 2014]
+m13 <- mammal$pair[mammal$year == 2013]
+set2014 <- Reduce(intersect, list(t14, m13))
+
+tick2018 <- tick %>%
+  filter(pair %in% set2018) %>%
+  filter(year == 2018)
+
+tick2017 <- tick %>%
+  filter(pair %in% set2017) %>%
+  filter(year == 2017)
+
+tick2016 <- tick %>%
+  filter(pair %in% set2016) %>%
+  filter(year == 2016)
+
+tick2015 <- tick %>%
+  filter(pair %in% set2015) %>%
+  filter(year == 2015)
+
+tick2014 <- tick %>%
+  filter(pair %in% set2014) %>%
+  filter(year == 2014)
+
+tick <- bind_rows(tick2018, tick2017, tick2016, tick2015, tick2014)
+
+mammal2018t <- mammal %>%
+  filter(pair %in% set2018) %>%
+  filter(year == 2017)
+
+mammal2017t <- mammal %>%
+  filter(pair %in% set2017) %>%
+  filter(year == 2016)
+
+mammal2016t <- mammal %>%
+  filter(pair %in% set2016) %>%
+  filter(year == 2015)
+
+mammal2015t <- mammal %>%
+  filter(pair %in% set2015) %>%
+  filter(year == 2014)
+
+mammal2014t <- mammal %>%
+  filter(pair %in% set2014) %>%
+  filter(year == 2013)
+
+xdata <- bind_rows(mammal2018t, mammal2017t, mammal2016t, mammal2015t, mammal2014t) %>%
+  ungroup() %>%
+  mutate_if(is.integer, funs(as.numeric(.))) %>%
+  select(-totalTraps, totalTraps, -year) %>%
+  mutate_if(is.numeric, funs(./totalTraps)) %>%
+  select(-totalTraps, -OTHE, -total, -GLSA, -GLVO, -CRPA, -CRSP, -MIPE, -MIPI, -RARA, -ZAHU, -ORPA, 
+         -REHU, -OCNU, -ROSP,-MUER, -MUFR, -MUNI, -DIVI, -MRSP, -SUSP, -REME, -SPTR, -SYFL, -SCCA, 
+         -SRSP, -MYGA, -NAIN, -MUMU, -NEFL, -SIHI, -CHHI, -MIOC, -pair, -TAHU, -BLSP, -SOLO, -PEME, 
+         -SOFU, -PEPO, -PEGO, -BLCA, -BLHY, -PEMA, -PESP) 
+
+ydata <- tick %>%
+  ungroup %>%
+  select(-year, -totalSampledArea, -totalCount) %>%
+  select(-pair)
+ydata <- data.frame(ydata)
+  
+edata <- tick %>%
+  ungroup %>%
+  select(pair, totalSampledArea) %>%
+  mutate(adultCount = totalSampledArea, nymphCount = totalSampledArea, larvaCount = totalSampledArea) %>%
+  select(-totalSampledArea) %>%
+  select(-pair)
+
+paste(names(xdata), collapse='+')
+  
+edata <- as.matrix(edata)
+S <- length(ydata)
+n <- length(ydata$larvaCount)
+ef <- list(columns = 1:S, values = edata)
+formula <- as.formula(~ BLBR+PELE+SOCI+TAST)
+modelList <- list(typeNames = c('DA'), effort = ef, ng = 10000, burnin = 1000)
+mtHostOutput2 <- gjam(formula = formula, xdata = xdata, ydata = ydata, modelList = modelList)
+
+# gjam plots
+pl <- list(GRIDPLOTS = TRUE, SAVEPLOTS = TRUE)
+gjamPlot(output = mtHostOutput2, plotPars = pl)
+
+save(mtHostOutput2, file = 'mtHostOutput2.rdata')
+```

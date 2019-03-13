@@ -1,0 +1,380 @@
+---
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(sp)
+library(rgdal)
+library(fuzzyjoin)
+library(stringi)
+library(leaflet)
+library(maptools)
+```
+
+```{r paths}
+mppath <- '/Users/taylorminich/Documents/grad/mp/data/mammals/processed/'
+tppath <- '/Users/taylorminich/Documents/grad/mp/data/ticks/processed/'
+mapath <- '/Users/taylorminich/Documents/grad/mp/data/mammals/abundance/'
+tapath <- '/Users/taylorminich/Documents/grad/mp/data/ticks/abundance/'
+ppath <- '/Users/taylorminich/Documents/grad/mp/data/plots/'
+```
+
+```{r aggregate all plots}
+mplotBART <- c('BART_062', 'BART_012', 'BART_007', 'BART_084', 'BART_001', 'BART_015')
+tplotBART <- c('BART_019', 'BART_029', 'BART_010', 'BART_011', 'BART_002', 'BART_015')
+pplotBART <- c('BART_028', 'BART_012', 'BART_007', 'BART_011', 'BART_001', 'BART_015')
+
+mplotBLAN <- c('BLAN_002', 'BLAN_001', 'BLAN_009', 'BLAN_003')
+tplotBLAN <-c('BLAN_002', 'BLAN_015', 'BLAN_004', 'BLAN_012')
+pplotBLAN <- c('BLAN_011', 'BLAN_001', 'BLAN_009', 'BLAN_018')
+
+mplotDSNY <- c('DSNY_001', 'DSNY_005', 'DSNY_006', 'DSNY_036', 'DSNY_016', 'DSNY_009', 'DSNY_004')
+tplotDSNY <- c('DSNY_001', 'DSNY_005', 'DSNY_006', 'DSNY_021', 'DSNY_008', 'DSNY_014', 'DSNY_004')
+pplotDSNY <- c('DSNY_001', 'DSNY_005', 'DSNY_006', 'DSNY_021', 'DSNY_016', 'DSNY_009', 'DSNY_004')
+
+mplotGRSM <- c('GRSM_013', 'GRSM_070', 'GRSM_014', 'GRSM_069', 'GRSM_071', 'GRSM_003', 'GRSM_015')
+tplotGRSM <- c('GRSM_006', 'GRSM_004', 'GRSM_010', 'GRSM_009', 'GRSM_005', 'GRSM_003', 'GRSM_015')
+pplotGRSM <- c('GRSM_013', 'GRSM_004', 'GRSM_014', 'GRSM_008', 'GRSM_011', 'GRSM_003', 'GRSM_015')
+
+mplotHARV <- c('HARV_001', 'HARV_006', 'HARV_021', 'HARV_010', 'HARV_008', 'HARV_023', 'HARV_032')
+tplotHARV <- c('HARV_001', 'HARV_006', 'HARV_002', 'HARV_026', 'HARV_020', 'HARV_004', 'HARV_022')
+pplotHARV <- c('HARV_001', 'HARV_006', 'HARV_021', 'HARV_010', 'HARV_008', 'HARV_023', 'HARV_022')
+
+mplotJERC <- c('JERC_002', 'JERC_005', 'JERC_006', 'JERC_009', 'JERC_003', 'JERC_019')
+tplotJERC <- c('JERC_002', 'JERC_005', 'JERC_004', 'JERC_010', 'JERC_034', 'JERC_044')
+pplotJERC <- c('JERC_002', 'JERC_005', 'JERC_006', 'JERC_009', 'JERC_003', 'JERC_019')
+
+mplotKONZ <- c('KONZ_001', 'KONZ_002', 'KONZ_008', 'KONZ_027', 'KONZ_006', 'KONZ_005')
+tplotKONZ <- c('KONZ_001', 'KONZ_002', 'KONZ_004', 'KONZ_009', 'KONZ_025', 'KONZ_007')
+pplotKONZ <- c('KONZ_056', 'KONZ_024', 'KONZ_062', 'KONZ_050', 'KONZ_003', 'KONZ_065')
+
+mplotORNL <- c('ORNL_002', 'ORNL_003', 'ORNL_007', 'ORNL_039', 'ORNL_001', 'ORNL_027')
+tplotORNL <- c('ORNL_002', 'ORNL_003', 'ORNL_007', 'ORNL_009', 'ORNL_040', 'ORNL_008')
+pplotORNL <- c('ORNL_002', 'ORNL_003', 'ORNL_007', 'ORNL_012', 'ORNL_001', 'ORNL_027')
+
+mplotOSBS <- c('OSBS_002', 'OSBS_003', 'OSBS_004', 'OSBS_005', 'OSBS_023', 'OSBS_012')
+tplotOSBS <- c('OSBS_002', 'OSBS_003', 'OSBS_004', 'OSBS_005', 'OSBS_001', 'OSBS_022')
+pplotOSBS <- c('OSBS_002', 'OSBS_003', 'OSBS_004', 'OSBS_005', 'OSBS_023', 'OSBS_012')
+
+mplotSCBI <- c('SCBI_039', 'SCBI_002', 'SCBI_035', 'SCBI_008', 'SCBI_004', 'SCBI_003')
+tplotSCBI <- c('SCBI_039', 'SCBI_002', 'SCBI_013', 'SCBI_005', 'SCBI_006', 'SCBI_007')
+pplotSCBI <- c('SCBI_016', 'SCBI_002', 'SCBI_013', 'SCBI_008', 'SCBI_004', 'SCBI_003')
+
+mplotSERC <- c('SERC_008', 'SERC_007', 'SERC_014', 'SERC_015', 'SERC_011', 'SERC_031')
+tplotSERC <- c('SERC_001', 'SERC_023', 'SERC_006', 'SERC_002', 'SERC_012', 'SERC_005')
+pplotSERC <- c('SERC_001', 'SERC_017', 'SERC_014', 'SERC_002', 'SERC_011', 'SERC_003')
+
+mplotUKFS <- c('UKFS_003', 'UKFS_004', 'UKFS_018', 'UKFS_007', 'UKFS_009', 'UKFS_010')
+tplotUKFS <- c('UKFS_003', 'UKFS_004', 'UKFS_018', 'UKFS_001', 'UKFS_030', 'UKFS_002')
+pplotUKFS <- c('UKDF_003', 'UKFS_004', 'UKFS_018', 'UKFS_007', 'UKFS_002', 'UKFS_010')
+
+pairs <- data.frame(c(mplotBART, mplotBLAN, mplotDSNY, mplotGRSM, mplotHARV, mplotJERC, mplotKONZ, mplotORNL, mplotOSBS, mplotSCBI, mplotSERC, mplotUKFS), c(tplotBART, tplotBLAN, tplotDSNY, tplotGRSM, tplotHARV, tplotJERC, tplotKONZ, tplotORNL, tplotOSBS, tplotSCBI, tplotSERC, tplotUKFS), c(pplotBART, pplotBLAN, pplotDSNY, pplotGRSM, pplotHARV, pplotJERC, pplotKONZ, pplotORNL, pplotOSBS, pplotSCBI, pplotSERC, pplotUKFS))
+colnames(pairs) <- c('mammal', 'tick', 'plant')
+
+pairs <- pairs %>%
+   mutate(mammalTick = paste(mammal, tick, sep = '_'), plantMammal = paste(plant, mammal, sep = '_'))
+
+tickPlots <- read.csv(paste0(tapath, 'tick.csv')) %>%
+  select(plotID, lat, lon) %>%
+  filter(plotID %in% pairs$tick) %>%
+  distinct()
+
+mammalPlots <- read.csv(paste0(mapath, 'mammal.csv')) %>%
+  select(plotID, lat, lon) %>%
+  filter(plotID %in% pairs$mammal) %>%
+  distinct()
+
+plantPlots <- read.csv(paste0(ppath, 'allPlots.csv')) %>%
+  rename(lat = latitude, lon = longitude) %>%
+  select(plotID, lat, lon) %>%
+  filter(plotID %in% pairs$plant) %>%
+  group_by(plotID) %>%
+  summarise(lat = mean(lat), lon = mean(lon))
+
+mammalTickPlots <- bind_rows(mammalPlots, tickPlots) %>%
+  distinct() %>%
+  left_join(pairs, by = c('plotID' = 'mammal')) %>%
+  select(plotID, lat, lon, mammalTick) %>%
+  left_join(pairs, by = c('plotID' = 'tick')) %>%
+  mutate(mammalTick = coalesce(mammalTick.x, mammalTick.y)) %>%
+  select(plotID, lat, lon, mammalTick)
+
+plantMammalPlots <- bind_rows(plantPlots, mammalPlots) %>%
+  distinct() %>%
+  left_join(pairs, by = c('plotID' = 'plant')) %>%
+  select(plotID, lat, lon, plantMammal) %>%
+  left_join(pairs, by = c('plotID' = 'mammal')) %>%
+  mutate(plantMammal = coalesce(plantMammal.x, plantMammal.y)) %>%
+  select(plotID, lat, lon, plantMammal)
+  
+
+pointsToLine <- function(data, lon, lat, id_field = NULL, sort_field = NULL) {
+
+  # Convert to SpatialPointsDataFrame
+  coordinates(data) <- c(lon, lat)
+
+  # If there is a sort field...
+  if (!is.null(sort_field)) {
+    if (!is.null(id_field)) {
+      data <- data[order(data[[id_field]], data[[sort_field]]), ]
+    } else {
+      data <- data[order(data[[sort_field]]), ]
+    }
+  }
+
+  # If there is only one path...
+  if (is.null(id_field)) {
+
+    lines <- SpatialLines(list(Lines(list(Line(data)), "id")))
+
+    return(lines)
+
+    # Now, if we have multiple lines...
+  } else if (!is.null(id_field)) {  
+
+    # Split into a list by ID field
+    paths <- sp::split(data, data[[id_field]])
+
+    sp_lines <- SpatialLines(list(Lines(list(Line(paths[[1]])), "line1")))
+
+    # I like for loops, what can I say...
+    for (p in 2:length(paths)) {
+      id <- paste0("line", as.character(p))
+      l <- SpatialLines(list(Lines(list(Line(paths[[p]])), id)))
+      sp_lines <- spRbind(sp_lines, l)
+    }
+
+    return(sp_lines)
+  }
+}
+
+
+mammalTickLines <- pointsToLine(mammalTickPlots, lon = 'lon', lat = 'lat', id_field = 'mammalTick')
+plantMammalLines <- pointsToLine(plantMammalPlots, lon = 'lon', lat = 'lat', id_field = 'plantMammal')
+
+
+mySites <- c('BART', 'BLAN', 'DSNY', 'GRSM', 'HARV', 'JERC', 'KONZ', 'ORNL', 'OSBS', 'SCBI', 'SERC', 'UKFS')
+sites <- read.csv(paste0(ppath, 'sites.csv')) %>%
+  filter(Site.ID %in% mySites) %>%
+  mutate(lat = as.numeric(substr(Lat..Long., 1, 7)), lon = as.numeric(substr(Lat..Long., 10, 18))) %>%
+  select(Site.Name, Site.ID, lat, lon)
+
+m <- leaflet() %>% setView(lng = -80, lat = 37, zoom = 5) %>% addTiles() %>%
+  addCircleMarkers(data = plantPlots, ~lon, ~lat, label = ~as.character(plotID), radius = 6, color = 'green', fillOpacity = 0.5) %>%
+  addCircleMarkers(data = mammalPlots, ~lon, ~lat, label = ~as.character(plotID), radius = 6, color = 'blue', fillOpacity = 0.5) %>%
+  addCircleMarkers(data = tickPlots, ~lon, ~lat, label = ~as.character(plotID), radius = 6, color = 'red', fillOpacity = 0.5) %>%
+  addMarkers(data = sites, ~lon, ~lat, label = ~as.character(Site.Name)) %>%
+  addPolylines(data = mammalTickLines, color = 'grey') %>%
+  addPolylines(data = plantMammalLines, color = 'grey') %>%
+  addLegend('bottomright', colors = c('green', 'blue', 'red'), labels = c('plant', 'mammal', 'tick')) %>%
+  addProviderTiles(providers$CartoDB.Positron)
+m
+```
+
+```{r plant plots}
+prpath <- '/Users/taylorminich/Documents/grad/mp/data/plants/raw/'
+
+BART <- read.csv(paste0(prpath, 'BART.csv'))
+BLAN <- read.csv(paste0(prpath, 'BLAN.csv'))
+DSNY <- read.csv(paste0(prpath, 'DSNY.csv'))
+GRSM <- read.csv(paste0(prpath, 'GRSM.csv'))
+HARV <- read.csv(paste0(prpath, 'HARV.csv'))
+JERC <- read.csv(paste0(prpath, 'JERC.csv'))
+KONZ <- read.csv(paste0(prpath, 'KONZ.csv'))
+ORNL <- read.csv(paste0(prpath, 'ORNL.csv'))
+OSBS <- read.csv(paste0(prpath, 'OSBS.csv'))
+SCBI <- read.csv(paste0(prpath, 'SCBI.csv'))
+SERC <- read.csv(paste0(prpath, 'SERC.csv'))
+UKFS <- read.csv(paste0(prpath, 'UKFS.csv'))
+
+myPlots <- c(levels(BART$plotID),levels(BLAN$plotID), levels(DSNY$plotID), levels(GRSM$plotID), levels(HARV$plotID), levels(JERC$plotID), 
+             levels(KONZ$plotID), levels(ORNL$plotID), levels(OSBS$plotID), levels(SCBI$plotID), levels(SERC$plotID), levels(UKFS$plotID))
+
+plantPlots <- read.csv(paste0(ppath, 'allPlots.csv')) %>%
+  rename(lat = latitude, lon = longitude) %>%
+  filter(plotID %in% myPlots) %>%
+  select(plotID, lat, lon) %>%
+  group_by(plotID) %>%
+  summarise(lat = mean(lat), lon = mean(lon))
+
+m <- leaflet() %>% setView(lng = -80, lat = 37, zoom = 5) %>% addTiles() %>%
+  addCircleMarkers(data = plantPlots, ~lon, ~lat, label = ~as.character(plotID), radius = 6, color = 'green', fillOpacity = 0.5)
+```
+
+```{r create shapefile}
+coordinates(plantPlots) = ~lon + lat
+proj4string(plantPlots)<- CRS("+init=epsg:4326")
+raster::shapefile(plantPlots, file = paste0(ppath, 'plots.shp'), overwrite = TRUE)
+```
+
+```{r tidy mast covariates}
+crpath <- '/Users/taylorminich/Documents/grad/mp/data/covariates/raw/'
+cppath <- '/Users/taylorminich/Documents/grad/mp/data/covariates/processed/'
+
+covs <- c('ppt', 'tmin')
+
+writeCovariates <- function(cov){
+  crpath <- '/Users/taylorminich/Documents/grad/mp/data/covariates/raw/'
+  cppath <- '/Users/taylorminich/Documents/grad/mp/data/covariates/processed/'
+  assign(cov, read.csv(paste0(crpath, cov, '.csv'), header = TRUE, check.names = FALSE))
+  
+  df <- get(cov) %>%
+    select(-imageID, -time, -.geo) %>%
+    rename(date = 'system:index') %>%
+    gather(key = 'lonlat', value = !!paste(cov), -date) %>%
+    mutate(lon = if_else(str_length(lonlat) == 13, str_sub(lonlat, 1, 7), str_sub(lonlat, 1, 6))) %>%
+    mutate(lat = if_else(str_length(lonlat) ==13, str_sub(lonlat, 9, 13), str_sub(lonlat, 8, 12))) %>%
+    select(-lonlat) %>%
+    mutate(date = as.character(date)) %>%
+    mutate(date = paste0(str_sub(date, 1, 6), '01')) %>%
+    mutate(date = ymd(date))
+
+  stri_sub(df$lon, -3, -4) <- '.'
+  stri_sub(df$lat, 3, 2) <- '.'
+
+  write.csv(df, file = paste0(cppath, cov, '.csv'), row.names = FALSE)
+}
+
+for(i in covs){
+  writeCovariates(i)
+}
+
+# pet from GEE
+pet <- read.csv(paste0(crpath, 'pet.csv'), check.names = FALSE) %>%
+  select(-imageID, -time, -.geo) %>%
+  rename(date = 'system:index') %>%    
+  gather(key = 'lonlat', value = pet, -date) %>%
+  mutate(lon = if_else(str_length(lonlat) == 13, str_sub(lonlat, 1, 7), str_sub(lonlat, 1, 6))) %>%
+  mutate(lat = if_else(str_length(lonlat) ==13, str_sub(lonlat, 9, 13), str_sub(lonlat, 8, 12))) %>%
+  select(-lonlat) %>%
+  mutate(date = as.character(date)) %>%
+  mutate(date = paste0(str_sub(date, 1, 7), '01')) %>%
+  mutate(date = ymd(date)) %>%
+  replace(is.na(.), 0) %>%
+  group_by(date, lat, lon) %>%
+  summarise(pet = 0.1 * sum(pet))
+
+stri_sub(pet$lon, -3, -4) <- '.'
+stri_sub(pet$lat, 3, 2) <- '.'
+
+#write.csv(pet, file = paste0(cppath, 'pet.csv'), row.names = FALSE)
+
+# covs from unix
+mastSites <- c('SCBI_LFDP', 'BART_C1P1', 'HARV_001', 'GRSM_PK', 'OSBS_001', 'SERC_001')
+
+def <- read.csv(paste0(crpath, 'def.csv'), check.names = FALSE) %>%
+  filter(mastID %in% mastSites) %>%
+  mutate(siteID = recode_factor(mastID, `SCBI_LFDP` = 'SCBI', `BART_C1P1` = 'BART', `HARV_001` = 'HARV', `GRSM_PK` = 'GRSM', 
+                                `OSBS_001` = 'OSBS', `SERC_001` = 'SERC')) %>%
+  select(-mastID) %>%
+  gather(key = 'date', value = 'def', -siteID) %>%
+  mutate(date = ymd(paste0(date, '_01'))) %>%
+  spread(key = 'siteID', value = 'def') %>%
+  mutate(BLAN = SCBI) %>%
+  gather(key = 'siteID', value = 'def', -date)
+
+tmin <- read.csv(paste0(crpath, 'tmin.csv'), check.names = FALSE) %>%
+  filter(mastID %in% mastSites) %>%
+  mutate(siteID = recode_factor(mastID, `SCBI_LFDP` = 'SCBI', `BART_C1P1` = 'BART', `HARV_001` = 'HARV', `GRSM_PK` = 'GRSM', 
+                                `OSBS_001` = 'OSBS', `SERC_001` = 'SERC')) %>%
+  select(-mastID) %>%
+  gather(key = 'date', value = 'tmin', -siteID) %>%
+  mutate(date = ymd(paste0(date, '_01'))) %>%
+  spread(key = 'siteID', value = 'tmin') %>%
+  mutate(BLAN = SCBI) %>%
+  gather(key = 'siteID', value = 'tmin', -date)
+
+write.csv(def, file = paste0(cppath, 'def.csv'), row.names = FALSE)
+write.csv(tmin, file = paste0(cppath, 'tmin.csv'), row.names = FALSE)
+```
+
+```{r tidy climate tables}
+covs <- c('ppt', 'tmin', 'pet', 'vpdmin', 'vpdmax')
+
+writeCovariates <- function(cov){
+  crpath <- '/Users/taylorminich/Documents/grad/mp/data/covariates/raw/'
+  cppath <- '/Users/taylorminich/Documents/grad/mp/data/covariates/processed/'
+  assign(cov, read.csv(paste0(crpath, cov, '.csv'), header = TRUE, check.names = FALSE))
+  
+  df <- get(cov) %>%
+    select(-imageID, -time, -.geo) %>%
+    rename(date = 'system:index') %>%
+    gather(key = 'lonlat', value = !!paste(cov), -date) %>%
+    mutate(lon = if_else(str_length(lonlat) == 13, str_sub(lonlat, 1, 7), str_sub(lonlat, 1, 6))) %>%
+    mutate(lat = if_else(str_length(lonlat) ==13, str_sub(lonlat, 9, 13), str_sub(lonlat, 8, 12))) %>%
+    select(-lonlat) %>%
+    mutate(date = as.character(date)) %>%
+    mutate(date = str_sub(date, 1, 8)) %>%
+    mutate(date = ymd(date))
+
+  stri_sub(df$lon, -3, -4) <- '.'
+  stri_sub(df$lat, 3, 2) <- '.'
+
+  write.csv(df, file = paste0(cppath, cov, '.csv'), row.names = FALSE)
+}
+
+for(i in covs){
+  writeCovariates(i)
+}
+```
+
+```{r tidy topographic tables}
+covs <- c('u1', 'u2', 'u3')
+
+writeTopoCovariates <- function(cov){
+  crpath <- '/Users/taylorminich/Documents/grad/mp/data/covariates/raw/'
+  cppath <- '/Users/taylorminich/Documents/grad/mp/data/covariates/processed/'
+  assign(cov, read.csv(paste0(crpath, cov, '.csv'), header = TRUE, check.names = FALSE))
+  
+  df <- get(cov) %>%
+    select(first, plotID) %>%
+    rename(!!cov := first)
+  
+  write.csv(df, file = paste0(cppath, cov, '.csv'), row.names = FALSE)
+}
+
+for(i in covs){
+  writeTopoCovariates(i)
+}
+
+```
+
+```{r merge covs}
+ppt <- read.csv(paste0(cppath, 'ppt.csv'), header = TRUE)
+ppt$date <- ymd(ppt$date)
+tmin <- read.csv(paste0(cppath, 'tmin.csv'), header = TRUE)
+tmin$date <- ymd(tmin$date)
+tmax <- read.csv(paste0(cppath, 'tmax.csv'), header = TRUE)
+tmax$date <- ymd(tmax$date)
+vpdmin <- read.csv(paste0(cppath, 'vpdmin.csv'), header = TRUE)
+vpdmin$date <- ymd(vpdmin$date)
+vpdmax <- read.csv(paste0(cppath, 'vpdmax.csv'), header = TRUE)
+vpdmax$date <- ymd(vpdmax$date)
+u1 <- read.csv(paste0(cppath, 'u1.csv'), header = TRUE)
+u2 <- read.csv(paste0(cppath, 'u2.csv'), header = TRUE)
+u3 <- read.csv(paste0(cppath, 'u3.csv'), header = TRUE)
+
+covGrid <- ppt %>%
+  left_join(tmin, by = c('date', 'lon', 'lat')) %>%
+  left_join(tmax, by = c('date', 'lon', 'lat')) %>%
+  left_join(vpdmin, by = c('date', 'lon', 'lat')) %>%
+  left_join(vpdmax, by = c('date', 'lon', 'lat'))
+
+plots <- read.csv(paste0(cpath, 'plots.csv'), header = TRUE)
+
+cov <- plots %>%
+  difference_full_join(covGrid, max_dist = 0.003) #%>%
+  rename(lon = lon.x) %>%
+  rename(lat = lat.x) %>%
+  select(-lon.y, -lat.y) %>%
+  rename(collectDate = date) %>%
+  left_join(u1, by = c('plotID')) %>%
+  left_join(u2, by = c('plotID')) %>%
+  left_join(u3, by = c('plotID'))
+  
+
+#write.csv(cov, paste0(cpath, 'cov.csv'), row.names = FALSE)
+```
+

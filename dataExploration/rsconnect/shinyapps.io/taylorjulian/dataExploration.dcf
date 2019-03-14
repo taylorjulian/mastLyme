@@ -1,0 +1,12 @@
+name: dataExploration
+title: dataExploration
+username:
+account: taylorjulian
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 788967
+bundleId: 1938546
+url: https://taylorjulian.shinyapps.io/dataExploration/
+when: 1552540188.60313
+asMultiple: FALSE
+asStatic: FALSE

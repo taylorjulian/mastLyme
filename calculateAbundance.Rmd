@@ -167,6 +167,14 @@ ggplot(data = tick) +
 ```
 
 ```{r plot tick on top of mammals}
+mammal <- mammal %>%
+  mutate(tmp = total/totalTraps) %>%
+  mutate(abundance = tmp/max(tmp)) %>%
+  select(collectDate, siteID, total, totalTraps, abundance, tmp)
+tick <- tick %>%
+  mutate(tmp = totalCount/totalSampledArea) %>%
+  mutate(abundance = tmp/max(tmp)) %>%
+  select(collectDate, siteID, totalCount, totalSampledArea, abundance, tmp)
 ggplot(data = NULL) + 
   geom_point(data = mammal, aes(x = collectDate, y = total/totalTraps), colour = '#56B4E9', alpha = 1/10) +
   geom_point(data = tick, aes(x = collectDate, y = totalCount/totalSampledArea), colour = '#009E73', alpha = 1/10) +

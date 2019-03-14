@@ -71,7 +71,7 @@ tplotUKFS <- c('UKFS_003', 'UKFS_004', 'UKFS_018', 'UKFS_001', 'UKFS_030', 'UKFS
 pplotUKFS <- c('UKDF_003', 'UKFS_004', 'UKFS_018', 'UKFS_007', 'UKFS_002', 'UKFS_010')
 
 pairs <- data.frame(c(mplotBART, mplotBLAN, mplotDSNY, mplotGRSM, mplotHARV, mplotJERC, mplotKONZ, mplotORNL, mplotOSBS, mplotSCBI, mplotSERC, mplotUKFS), c(tplotBART, tplotBLAN, tplotDSNY, tplotGRSM, tplotHARV, tplotJERC, tplotKONZ, tplotORNL, tplotOSBS, tplotSCBI, tplotSERC, tplotUKFS), c(pplotBART, pplotBLAN, pplotDSNY, pplotGRSM, pplotHARV, pplotJERC, pplotKONZ, pplotORNL, pplotOSBS, pplotSCBI, pplotSERC, pplotUKFS))
-colnames(pairs) <- c('mammal', 'tick', 'plant')
+ 
 
 pairs <- pairs %>%
    mutate(mammalTick = paste(mammal, tick, sep = '_'), plantMammal = paste(plant, mammal, sep = '_'))

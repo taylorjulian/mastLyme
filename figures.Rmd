@@ -1,0 +1,173 @@
+---
+output: html_document
+---
+
+```{r paths}
+ppath <- '/Users/taylorminich/Documents/grad/mp/data/plots/'
+ipath <- '/Users/taylorminich/Documents/grad/mp/images/'
+```
+
+```{r periodic mast}
+t <- seq(1, 15, 0.001)
+mast <- ifelse(t < 4.243, cos(3*t)*sin(t)+1.5,
+          ifelse(t >= 4.243 & t < 10.526, cos(t-.23033)*sin(2*t-1.1729)+1.172,
+           ifelse(t>=10.526, cos(3*t)*sin(t)+1.5,0)))
+mammalAnticipate <- ifelse(t < 4.243, cos(3*t)*sin(t)+1.5,
+                      ifelse(t >= 4.243 & t < 10.526, cos(t-.23033)*sin(2*t-1.1729)+1.172,
+                        ifelse(t>=10.526, cos(3*t)*sin(t)+1.5,0)))
+mammalReact <- ifelse(t < 4.599, cos(3*t-1)*sin(t-0.5)+1.5,
+                ifelse(t >= 4.599 & t < 10.883, cos(t-0.86033)*sin(2*t-1.6729)+1.4865,
+                  ifelse(t>=10.883, cos(3*t-1)*sin(t-0.5)+1.5,0)))
+df <- data.frame(t, mast, mammalAnticipate, mammalReact)
+
+
+
+
+mast <- ggplot(data = df, aes(t, mast)) +
+  geom_line() +
+  geom_area(fill = '#004529', col = '#004529', alpha = 0.5) +
+  scale_x_continuous(name ='year', labels = function(x) x+2000, breaks = pretty_breaks(n = 8)) +
+  scale_y_continuous(name = 'mast production') +
+  theme_minimal() +
+  theme(axis.text.y = element_blank()) 
+
+mammal <- ggplot(data = df) +
+  geom_line(aes(t, mammalReact)) +
+  geom_area(aes(t, mammalReact), fill = '#225ea8', col = '#225ea8', alpha = 0.3) +
+  geom_line(aes(t, mammalAnticipate)) +
+  geom_area(aes(t, mammalAnticipate), fill = '#225ea8', col = '#225ea8', alpha = 0.3) +
+  scale_y_continuous(name = 'mammal abundance') +
+  theme_minimal() +
+  theme(axis.text.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.title.x = element_blank()) 
+
+months <- c('J', 'A', 'S', 'O', 'N', 'D', 'J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D', 'J')
+
+tick <- ggplot(data = data.frame(x = c(1, 19)), aes(x)) +
+  geom_area(stat = 'function', fun = dnorm, args = list(mean = 2.5, sd = 0.5), fill = '#cc4c02', alpha = 0.5) +
+  geom_area(stat = 'function', fun = dnorm, args = list(mean = 11.5, sd = 0.7), fill = '#cc4c02', alpha = 0.5) +
+  geom_area(stat = 'function', fun = dnorm, args = list(mean = 17, sd = 0.8), fill = '#cc4c02', alpha = 0.5) +
+  stat_function(fun = dnorm, n = 500, args = list(mean = 2.5, sd = 0.5), col = '#cc4c02') +
+  stat_function(fun = dnorm, n = 500, args = list(mean = 11.5, sd = 0.7), col = '#cc4c02') +
+  stat_function(fun = dnorm, n = 500, args = list(mean = 17, sd = 0.8), col = '#cc4c02') +
+  scale_y_continuous(name = 'tick abundance') +
+  scale_x_continuous(name ='month', labels = months, breaks = seq(1, 19, 1)) +
+  theme_minimal() +
+  theme(axis.text.y = element_blank(),
+        axis.title.x = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank()) 
+
+figure1 <- grid.arrange(tick, mammal, mast, layout_matrix = rbind(c(NA, 1), c(2, 2), c(3, 3)))
+ggsave(file = paste0(ipath, 'figure1.png'), figure1, device = NULL, width = 13.33, height = 7.5)
+```
+
+
+```{r site map}
+mySites <- c('BART', 'BLAN', 'DSNY', 'GRSM', 'HARV', 'JERC', 'KONZ', 'ORNL', 'OSBS', 'SCBI', 'SERC', 'UKFS')
+mastSites <- c('BART', 'BLAN','GRSM', 'HARV', 'OSBS', 'SCBI', 'SERC')
+
+
+sites <- read.csv(paste0(ppath, 'sites.csv')) %>%
+  filter(Site.ID %in% mySites) %>%
+  mutate(lat = as.numeric(substr(Lat..Long., 1, 7)), lon = as.numeric(substr(Lat..Long., 10, 18))) %>%
+  select(Site.Name, Site.ID, lat, lon) %>%
+  mutate(mastSite = as.factor(if_else(Site.ID %in% mastSites, 'mast site', 'non-mast site')))
+
+
+loc <- c(lon = -83, lat = 37)
+USAMap <- ggmap(get_map(loc, maptype = 'terrain', zoom = 5, crop = FALSE, scale = 2, size = c(640, 360)))
+
+siteMap <- USAMap + 
+  geom_point(data = sites, aes(x = lon, y = lat, col = mastSite), size = 3) +
+  geom_point(data = sites, aes(x = lon, y = lat), shape = 1, size = 3.5, colour = 'darkgrey') +
+  geom_label_repel(data = sites,
+    aes(x = lon, y = lat, label = Site.Name), 
+    size = 2.5, 
+    box.padding = 0.2, point.padding = 0.3,
+    segment.color = 'grey50')  +
+  scale_color_manual('', values=c('#8dd3c7', '#fccde5')) +
+  theme(axis.line = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.margin = unit(c(0, 0, -1, -1), 'lines'),
+        legend.justification = c(1, 0.05), 
+        legend.position = c(1, 0.05),
+        legend.background = element_rect(fill = alpha('white', 0))) +
+  xlab('') +
+  ylab('')
+
+ggsave(file = paste0(ipath, 'siteMap.png'), siteMap, device = NULL)
+```
+
+```{r example plots}
+mplotGRSM <- c('GRSM_013', 'GRSM_070', 'GRSM_014', 'GRSM_069', 'GRSM_071', 'GRSM_003', 'GRSM_015')
+tplotGRSM <- c('GRSM_006', 'GRSM_004', 'GRSM_010', 'GRSM_009', 'GRSM_005', 'GRSM_003', 'GRSM_015')
+pplotGRSM <- c('GRSM_013', 'GRSM_004', 'GRSM_014', 'GRSM_008', 'GRSM_011', 'GRSM_003', 'GRSM_015')
+
+pairs <- data.frame(mplotGRSM, tplotGRSM, pplotGRSM)
+colnames(pairs) <- c('mammal', 'tick', 'plant')
+
+pairs <- pairs %>%
+   mutate(mammalTick = paste(mammal, tick, sep = '_'), plantMammal = paste(plant, mammal, sep = '_'))
+
+tickPlots <- read.csv(paste0(tapath, 'tick.csv')) %>%
+  select(plotID, lat, lon) %>%
+  filter(plotID %in% pairs$tick) %>%
+  distinct() %>%
+  mutate(type = 'tick')
+
+mammalPlots <- read.csv(paste0(mapath, 'mammal.csv')) %>%
+  select(plotID, lat, lon) %>%
+  filter(plotID %in% pairs$mammal) %>%
+  distinct() %>%
+  mutate(type = 'small mammal')
+
+plantPlots <- read.csv(paste0(ppath, 'allPlots.csv')) %>%
+  rename(lat = latitude, lon = longitude) %>%
+  select(plotID, lat, lon) %>%
+  filter(plotID %in% pairs$plant) %>%
+  group_by(plotID) %>%
+  summarise(lat = mean(lat), lon = mean(lon)) %>%
+  mutate(type = 'mast')
+
+df <- data.frame(bind_rows(plantPlots, mammalPlots, tickPlots))
+
+mammalTickPlots <- bind_rows(mammalPlots, tickPlots) %>%
+  distinct() %>%
+  left_join(pairs, by = c('plotID' = 'mammal')) %>%
+  select(plotID, lat, lon, mammalTick) %>%
+  left_join(pairs, by = c('plotID' = 'tick')) %>%
+  mutate(mammalTick = coalesce(mammalTick.x, mammalTick.y)) %>%
+  select(plotID, lat, lon, mammalTick)
+
+plantMammalPlots <- bind_rows(plantPlots, mammalPlots) %>%
+  distinct() %>%
+  left_join(pairs, by = c('plotID' = 'plant')) %>%
+  select(plotID, lat, lon, plantMammal) %>%
+  left_join(pairs, by = c('plotID' = 'mammal')) %>%
+  mutate(plantMammal = coalesce(plantMammal.x, plantMammal.y)) %>%
+  select(plotID, lat, lon, plantMammal)
+  
+
+loc <- c(lon = -83.47, lat = 35.68)
+GRSMMap <- ggmap(get_map(loc, maptype = 'terrain', zoom = 12, crop = FALSE, scale = 2, size = c(640, 360)))
+
+plotMap <- GRSMMap + 
+  geom_point(data = df, aes(x = lon, y = lat, col = type), size = 3.5, alpha = 1) +
+  geom_line(data = mammalTickPlots, aes(x = lon, y = lat, group = mammalTick), col = '#525252') +
+  geom_line(data = plantMammalPlots, aes(x = lon, y = lat, group = plantMammal), col = '#525252') +
+  scale_color_manual('plot type', values=c('#004529', '#225ea8', '#cc4c02')) +
+  theme(axis.line = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.margin = unit(c(0, 0, -1, -1), 'lines'),
+        legend.justification = c(1, 0.05), 
+        legend.position = c(1, 0.05),
+        legend.background = element_rect(fill = alpha('white', 0.9))) +
+  xlab('') +
+  ylab('')
+
+ggsave(file = paste0(ipath, 'plotMap.png'), plotMap, device = NULL)
+```

@@ -598,9 +598,7 @@ xdata <- bind_rows(mammal2018t, mammal2017t, mammal2016t, mammal2015t, mammal201
   mutate_if(is.integer, funs(as.numeric(.))) %>%
   select(-totalTraps, totalTraps, -year) %>%
   mutate_if(is.numeric, funs(./totalTraps)) %>%
-  select(-totalTraps, -OTHE, -total, -GLSA, -GLVO, -CRPA, -CRSP, -MIPE, -MIPI, -RARA, -ZAHU, -ORPA, 
-         -REHU, -OCNU, -ROSP,-MUER, -MUFR, -MUNI, -DIVI, -MRSP, -SUSP, -REME, -SPTR, -SYFL, -SCCA, 
-         -SRSP, -MYGA, -NAIN, -MUMU, -NEFL, -SIHI, -CHHI, -MIOC, -pair, -TAHU, -BLSP, -SOLO)
+  select(BLBR, BLCA, BLHY,  PELE, PEMA, PEME, SOCI, TAST)
 
 ydata <- tick %>%
   ungroup %>%
@@ -621,16 +619,17 @@ edata <- as.matrix(edata)
 S <- length(ydata)
 n <- length(ydata$larvaCount)
 ef <- list(columns = 1:S, values = edata)
-formula <- as.formula(~ BLBR+PELE+PEMA+PESP+SOCI+SOFU+TAST+BLCA+PEGO+PEME+PEPO+BLHY)
+formula <- as.formula(~ BLBR+BLCA+BLHY+PELE+PEMA+PEME+SOCI+TAST)
 modelList <- list(typeNames = c('DA'), effort = ef, ng = 10000, burnin = 1000)
 mtHostOutput <- gjam(formula = formula, xdata = xdata, ydata = ydata, modelList = modelList)
 
 # gjam plots
 pl <- list(GRIDPLOTS = TRUE, SAVEPLOTS = TRUE)
-gjamPlot(output = mtHostOutput, plotPars = pl)
+gjamPlot(output = mtHostOutput)
 
 save(mtHostOutput, file = 'mtHostOutput.rdata')
 ```
+
 ```{r model with reduced host species and lag t-1}
 t18 <- tick$pair[tick$year == 2018]
 m17 <- mammal$pair[mammal$year == 2017]

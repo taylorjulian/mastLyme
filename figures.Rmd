@@ -5,6 +5,13 @@ output: html_document
 ```{r paths}
 ppath <- '/Users/taylorminich/Documents/grad/mp/data/plots/'
 ipath <- '/Users/taylorminich/Documents/grad/mp/images/'
+rpath <- '/Users/taylorminich/Documents/grad/mp/results/'
+tapath <- '/Users/taylorminich/Documents/grad/mp/data/ticks/abundance/'
+mapath <- '/Users/taylorminich/Documents/grad/mp/data/mammals/abundance/'
+
+library(ggplot2)
+library(ggmap)
+library(ggrepel)
 ```
 
 ```{r periodic mast}
@@ -15,13 +22,10 @@ mast <- ifelse(t < 4.243, cos(3*t)*sin(t)+1.5,
 mammalAnticipate <- ifelse(t < 4.243, cos(3*t)*sin(t)+1.5,
                       ifelse(t >= 4.243 & t < 10.526, cos(t-.23033)*sin(2*t-1.1729)+1.172,
                         ifelse(t>=10.526, cos(3*t)*sin(t)+1.5,0)))
-mammalReact <- ifelse(t < 4.599, cos(3*t-1)*sin(t-0.5)+1.5,
-                ifelse(t >= 4.599 & t < 10.883, cos(t-0.86033)*sin(2*t-1.6729)+1.4865,
-                  ifelse(t>=10.883, cos(3*t-1)*sin(t-0.5)+1.5,0)))
+mammalReact <- ifelse(t < 5.243, (1/2)*(sin(4*t-4)+sin(-2*t+2))+1.5,
+                ifelse(t >= 5.243 & t < 11.526, (1/2)*(sin(3*t-4.40222)+sin(t-1.94268))+1.172,
+                  ifelse(t>=11.526, (1/2)*(sin(4*t-4)+sin(-2*t+2))+1.5,0)))
 df <- data.frame(t, mast, mammalAnticipate, mammalReact)
-
-
-
 
 mast <- ggplot(data = df, aes(t, mast)) +
   geom_line() +
@@ -59,42 +63,39 @@ tick <- ggplot(data = data.frame(x = c(1, 19)), aes(x)) +
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank()) 
 
-figure1 <- grid.arrange(tick, mammal, mast, layout_matrix = rbind(c(NA, 1), c(2, 2), c(3, 3)))
-ggsave(file = paste0(ipath, 'figure1.png'), figure1, device = NULL, width = 13.33, height = 7.5)
+trophic <- grid.arrange(tick, mammal, mast, layout_matrix = rbind(c(NA, 1), c(2, 2), c(3, 3)))
+ggsave(file = paste0(ipath, 'trophic.png'), trophic, device = NULL, width = 13.33, height = 7.5)
 ```
-
 
 ```{r site map}
 mySites <- c('BART', 'BLAN', 'DSNY', 'GRSM', 'HARV', 'JERC', 'KONZ', 'ORNL', 'OSBS', 'SCBI', 'SERC', 'UKFS')
-mastSites <- c('BART', 'BLAN','GRSM', 'HARV', 'OSBS', 'SCBI', 'SERC')
-
+mastSites <- c('BART', 'BLAN','GRSM', 'HARV', 'SCBI', 'SERC')
 
 sites <- read.csv(paste0(ppath, 'sites.csv')) %>%
   filter(Site.ID %in% mySites) %>%
   mutate(lat = as.numeric(substr(Lat..Long., 1, 7)), lon = as.numeric(substr(Lat..Long., 10, 18))) %>%
   select(Site.Name, Site.ID, lat, lon) %>%
-  mutate(mastSite = as.factor(if_else(Site.ID %in% mastSites, 'mast site', 'non-mast site')))
-
+  mutate(mastSite = as.factor(if_else(Site.ID %in% mastSites, 'mastif & neon', 'neon')))
 
 loc <- c(lon = -83, lat = 37)
-USAMap <- ggmap(get_map(loc, maptype = 'terrain', zoom = 5, crop = FALSE, scale = 2, size = c(640, 360)))
+USAMap <- ggmap(get_map(loc, maptype = 'terrain', color = 'bw', zoom = 5, crop = FALSE, scale = 2, size = c(640, 360)))
 
 siteMap <- USAMap + 
-  geom_point(data = sites, aes(x = lon, y = lat, col = mastSite), size = 3) +
-  geom_point(data = sites, aes(x = lon, y = lat), shape = 1, size = 3.5, colour = 'darkgrey') +
+  geom_point(data = sites, aes(x = lon, y = lat, col = mastSite), size = 2) +
+  geom_point(data = sites, aes(x = lon, y = lat), shape = 1, size = 2.5, colour = 'darkgrey') +
   geom_label_repel(data = sites,
     aes(x = lon, y = lat, label = Site.Name), 
     size = 2.5, 
     box.padding = 0.2, point.padding = 0.3,
     segment.color = 'grey50')  +
-  scale_color_manual('', values=c('#8dd3c7', '#fccde5')) +
+  scale_color_manual('site type', values=c('#dfc27d', '#4393c3')) +
   theme(axis.line = element_blank(),
         axis.text = element_blank(),
         axis.ticks = element_blank(),
         plot.margin = unit(c(0, 0, -1, -1), 'lines'),
         legend.justification = c(1, 0.05), 
         legend.position = c(1, 0.05),
-        legend.background = element_rect(fill = alpha('white', 0))) +
+        legend.background = element_rect(fill = alpha('white', 0.9))) +
   xlab('') +
   ylab('')
 
@@ -130,7 +131,7 @@ plantPlots <- read.csv(paste0(ppath, 'allPlots.csv')) %>%
   filter(plotID %in% pairs$plant) %>%
   group_by(plotID) %>%
   summarise(lat = mean(lat), lon = mean(lon)) %>%
-  mutate(type = 'mast')
+  mutate(type = 'tree')
 
 df <- data.frame(bind_rows(plantPlots, mammalPlots, tickPlots))
 
@@ -152,13 +153,13 @@ plantMammalPlots <- bind_rows(plantPlots, mammalPlots) %>%
   
 
 loc <- c(lon = -83.47, lat = 35.68)
-GRSMMap <- ggmap(get_map(loc, maptype = 'terrain', zoom = 12, crop = FALSE, scale = 2, size = c(640, 360)))
+GRSMMap <- ggmap(get_map(loc, maptype = 'terrain', color = 'bw', zoom = 12, crop = FALSE, scale = 2, size = c(640, 360)))
 
 plotMap <- GRSMMap + 
   geom_point(data = df, aes(x = lon, y = lat, col = type), size = 3.5, alpha = 1) +
   geom_line(data = mammalTickPlots, aes(x = lon, y = lat, group = mammalTick), col = '#525252') +
   geom_line(data = plantMammalPlots, aes(x = lon, y = lat, group = plantMammal), col = '#525252') +
-  scale_color_manual('plot type', values=c('#004529', '#225ea8', '#cc4c02')) +
+  scale_color_manual('plot type', values=c('#225ea8', '#cc4c02', '#004529')) +
   theme(axis.line = element_blank(),
         axis.text = element_blank(),
         axis.ticks = element_blank(),
@@ -170,4 +171,131 @@ plotMap <- GRSMMap +
   ylab('')
 
 ggsave(file = paste0(ipath, 'plotMap.png'), plotMap, device = NULL)
+```
+
+
+```{r plant-mammal lag model}
+load(paste0(rpath, 'pmTotalLag2Output.rdata'))
+
+cred <- pmTotalLag2Output$parameters$betaStandXWTable %>%
+  rownames_to_column %>%
+  separate(rowname, c('species','predictor'), sep = '_') %>%
+  mutate(species = recode_factor(species, `BLBR` = 'Blarina brevicauda', `PELE` = 'Peromyscus leucopus', `PEMA` = 'Peromyscus maniculatus',
+                                 `SOCI` = 'Sorex cinereus', `TAST` = 'Tamias striatus')) %>%
+  mutate(predictor = factor(predictor, levels = c('t', 't1'))) %>%
+  mutate(relationship = if_else(Estimate < 0, 'negative', 'positive')) %>%
+  mutate(predictor = recode_factor(predictor, `t` = 't', `t1` = 't - 1'))
+
+pmLag <- ggplot(cred, aes(x = predictor, y = Estimate, col = relationship)) +
+  geom_point() +
+  facet_grid(vars(species)) +
+  scale_y_continuous(breaks = seq(-5, 5, 5), limits = c(-8.5, 8.5)) +
+  geom_errorbar(aes(ymin = CI_025, ymax = CI_975), width = 0.1) +
+  scale_color_manual(values=c("#E69F00", "#56B4E9")) +
+  xlab('') +
+  theme_minimal() +
+  theme(legend.position = 'bottom', 
+        strip.text.y = element_text(angle = 0),
+        panel.spacing.y = unit(0.5, 'lines'),
+        axis.text.x = element_text(size = 12), 
+        text = element_text(size = 12))
+
+ggsave(file = paste0(ipath, 'pmLag.png'), pmLag, device = NULL, width = 7.5, height = 7.5)
+```
+
+```{r mammal-tick lag model}
+load(paste0(rpath, 'mtTotalLag2Output.rdata'))
+
+cred <- mtTotalLag2Output$parameters$betaStandXWTable %>%
+  rownames_to_column %>%
+  separate(rowname, c('tick','predictor'), sep = '_') %>%
+  mutate(tick = factor(tick, levels = c('larvaCount', 'nymphCount', 'adultCount'))) %>%
+  mutate(predictor = factor(predictor, levels = c('t', 't1'))) %>%
+  mutate(bottom = if_else(CI_025 < 0, -1, 1), top = if_else(CI_975 < 0, -1, 1)) %>%
+  mutate(sig = bottom + top) %>%
+  mutate(significance = as.factor(case_when(sig == -2 ~ 'negative relationship',
+                                  sig == 0 ~ 'non-significant',
+                                  sig == 2 ~ 'positive relationship'))) %>%
+  mutate(predictor = recode_factor(predictor, `t` = 't', `t1` = 't - 1')) %>%
+  select(-sig, -bottom, -top)
+
+tickLab <- c(`adultCount` = 'adult stage',
+             `larvaCount` = 'larva stage',
+             `nymphCount` = 'nymph stage')
+
+mtLag <- ggplot(cred, aes(x = predictor, y = Estimate, col = significance)) + 
+  geom_point() +
+  facet_grid(vars(tick), labeller = labeller(tick = tickLab)) +
+  scale_y_continuous(breaks = seq(-0.5, 0.5, 0.5), limits = c(-0.5, 0.5)) +
+  geom_errorbar(aes(ymin = CI_025, ymax = CI_975), width = 0.1) +
+  scale_color_manual(values=c("#999999", "#56B4E9")) +
+  xlab('') +
+  theme_minimal() +
+  theme(legend.position = 'bottom',
+        strip.text.y = element_text(angle = 0),
+        panel.spacing.y = unit(2, 'lines'),
+        axis.text.x = element_text(size = 15),
+        text = element_text(size = 15))
+
+
+ggsave(file = paste0(ipath, 'mtLag.png'), mtLag, device = NULL, width = 7.5, height = 7.5)
+```
+
+```{r mammal-tick species model with reduced species from host genera}
+load(paste0(rpath, 'mtHostOutput.rdata'))
+
+cred <- mtHostOutput$parameters$betaStandXWTable %>%
+  rownames_to_column %>%
+  separate(rowname, c('tick','predictor'), sep = '_') %>%
+  mutate(tick = factor(tick, levels = c('larvaCount', 'nymphCount', 'adultCount'))) %>%
+  mutate(species = predictor) %>%
+  select(-predictor) %>%
+  mutate(bottom = if_else(CI_025 < 0, -1, 1), top = if_else(CI_975 < 0, -1, 1)) %>%
+  mutate(sig = bottom + top) %>%
+  mutate(significance = as.factor(case_when(sig == -2 ~ 'negative relationship',
+                                  sig == 0 ~ 'non-significant',
+                                  sig == 2 ~ 'positive relationship'))) %>%
+  select(-sig, -bottom, -top) %>%
+  mutate(species = recode_factor(species, `BLBR` = 'Blarina brevicauda', `BLCA` = 'Blarina carolinensis', `BLHY` = 'Blarina hylophaga', 
+                               `PELE` = 'Peromyscus leucopus', `PEMA` = 'Peromyscus maniculatus', `PEME` = 'Peromyscus merriami', 
+                                `SOCI` = 'Sorex cinereus', `TAST` = 'Tamias striatus'))
+
+tickLab <- c(`adultCount` = 'adult stage',
+             `larvaCount` = 'larva stage',
+             `nymphCount` = 'nymph stage')
+
+mtSpecies <- ggplot(cred, aes(x = species, y = Estimate, col = significance)) + 
+  geom_point() +
+  facet_grid(vars(tick), labeller = labeller(tick = tickLab)) +
+  geom_errorbar(aes(ymin = CI_025, ymax = CI_975), width = 0.1) +
+  scale_color_manual(values=c("#E69F00", "#999999", "#56B4E9")) +
+  scale_y_continuous(breaks = seq(-0.5, 0.5, 0.5), limits = c(-0.65, 0.65)) +
+  xlab('') +
+  theme_minimal() +
+  theme(legend.position = 'bottom', 
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 12),
+        panel.spacing.y = unit(2, 'lines'),
+        strip.text.y = element_text(angle = 0),
+        text = element_text(size = 15))
+
+ggsave(file = paste0(ipath, 'mtSpecies.png'), mtSpecies, device = NULL, width = 7.5, height = 7.5)
+```
+
+```{r phylogeny}
+genera <- read.tree(text = '(((((((Fraxinus_-_ash, Ilex_-_holly), (Oxydendrum_-_sourwood, Rhododendron_-_rhododendron)), 
+                  (Cornus_-_dogwood, Nyssa_-_black_gum)), ((((Fagus_-_beech, Quercus_-_oak), Carya_-_hickory), 
+                  Betula_-_birch), Acer_-_maple)), Liquidambar_-_sweet_gum), ((Liriodendron_-_tulip_tree, Asimina_-_pawpaw), 
+                  Lindera_-_spicebush)), ((Pinus_-_pine, Picea_-_spruce), Tsuga_-_hemlock));')
+plot(genera, edge.width = 1)
+
+png(file = '/Users/taylorminich/Documents/grad/mp/images/genera.png', width = 650, height = 650)
+plot(genera, edge.width = 1)
+dev.off()
+
+species <- read.tree(text = '((((Blarina_brevicauda_-_northern_short-tailed_shrew, Blarina_carolinensis_-_southern_short-tailed_shrew), Blarina_hylophaga_-_Elliot`s_short-tailed_shrew), Sorex_cinereus_-_common_shrew), (((Peromyscus_maniculatus_-_deer_mouse, Peromyscus_leucopus_-_white-footed_mouse), Peromyscus_merriami_-_mesquite_mouse), Tamias_striatus_-_eastern_chipmunk));')
+plot(species, edge.width = 1)
+
+png(file = '/Users/taylorminich/Documents/grad/mp/images/species.png', width = 650, height = 650)
+plot(species, edge.width = 1)
+dev.off()
 ```

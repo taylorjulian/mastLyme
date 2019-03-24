@@ -14,7 +14,8 @@ mast <- read.csv(paste0(spath, 'mast.csv'))
 nutrition <- read.csv(paste0(spath, 'nutrition.csv'))
 
 mplotBART <- c('BART_062', 'BART_012', 'BART_007', 'BART_084', 'BART_001', 'BART_015')
-pplotBART <- c('BART_028', 'BART_012', 'BART_007', 'BART_011', 'BART_001', 'BART_015')
+pplotBART <- c('BART_028', 'BART_012', 'BART_007', 'BART_011', 'BART_001', 'BART_015') #needs new plots
+pplotBART <- c('BART_026', 'BART_012', 'BART_016', 'BART_011', 'BART_028', 'BART_002')
 siteBART <- 'BART'
 
 mplotBLAN <- c('BLAN_002', 'BLAN_001', 'BLAN_009', 'BLAN_003')
@@ -29,20 +30,17 @@ mplotHARV <- c('HARV_001', 'HARV_006', 'HARV_021', 'HARV_010', 'HARV_008', 'HARV
 pplotHARV <- c('HARV_001', 'HARV_006', 'HARV_021', 'HARV_010', 'HARV_008', 'HARV_023', 'HARV_022')
 siteHARV <- 'HARV'
 
-mplotORNL <- c('ORNL_002', 'ORNL_003', 'ORNL_007', 'ORNL_039', 'ORNL_001', 'ORNL_027')
-pplotORNL <- c('ORNL_002', 'ORNL_003', 'ORNL_007', 'ORNL_012', 'ORNL_001', 'ORNL_027')
-siteORNL <- 'ORNL'
-
 mplotSCBI <- c('SCBI_039', 'SCBI_002', 'SCBI_035', 'SCBI_008', 'SCBI_004', 'SCBI_003')
-pplotSCBI <- c('SCBI_016', 'SCBI_002', 'SCBI_013', 'SCBI_008', 'SCBI_004', 'SCBI_003')
+pplotSCBI <- c('SCBI_016', 'SCBI_002', 'SCBI_013', 'SCBI_008', 'SCBI_004', 'SCBI_003') #needs new plots
+pplotSCBI <- c('SCBI_016', 'SCBI_002', 'SCBI_014', 'SCBI_015', 'SCBI_004', 'SCBI_003')
 siteSCBI <- 'SCBI'
 
 mplotSERC <- c('SERC_008', 'SERC_007', 'SERC_014', 'SERC_015', 'SERC_011', 'SERC_031')
 pplotSERC <- c('SERC_001', 'SERC_017', 'SERC_014', 'SERC_002', 'SERC_011', 'SERC_003')
 siteSERC <- 'SERC'
 
-pairs <- data.frame(c(pplotBART, pplotBLAN, pplotGRSM, pplotHARV, pplotORNL, pplotSCBI, pplotSERC), 
-                    c(mplotBART, mplotBLAN, mplotGRSM, mplotHARV, mplotORNL, mplotSCBI, mplotSERC))
+pairs <- data.frame(c(pplotBART, pplotBLAN, pplotGRSM, pplotHARV, pplotSCBI, pplotSERC), 
+                    c(mplotBART, mplotBLAN, mplotGRSM, mplotHARV, mplotSCBI, mplotSERC))
 colnames(pairs) <- c('plant', 'mammal')
 
 
@@ -57,8 +55,13 @@ plant <- mast %>%
   mutate(grams = mast * gmPerSeed) %>%
   group_by(plotID, year, genus) %>%
   summarise(grams = sum(grams)) %>%
-  spread(genus, grams)
-  
+  spread(genus, grams) %>%
+  filter(year >2010) %>%
+  replace(is.na(.), 0) %>%
+  left_join(pairs, by = c('plotID' = 'plant')) %>%
+  mutate(pair = paste(plotID, mammal, sep = '_')) %>%
+  ungroup() %>%
+  select(pair, year, everything(), -plotID, -mammal)
 
 
 mdf <- function(site, mplot, pplot){
@@ -83,17 +86,19 @@ mdf(siteBART, mplotBART, pplotBART)
 mdf(siteBLAN, mplotBLAN, pplotBLAN)
 mdf(siteGRSM, mplotGRSM, pplotGRSM)
 mdf(siteHARV, mplotHARV, pplotHARV)
-mdf(siteORNL, mplotORNL, pplotORNL)
 mdf(siteSCBI, mplotSCBI, pplotSCBI)
 mdf(siteSERC, mplotSERC, pplotSERC)
 
-mammal <- bind_rows(BART, BLAN, GRSM, HARV, ORNL, SCBI, SERC) %>%
+mammal <- bind_rows(BART, BLAN, GRSM, HARV, SCBI, SERC) %>%
   replace(is.na(.), 0) %>%
   mutate(year = year(collectDate)) %>%
-  select(pair, year, total, totalTraps, BLBR, PELE, SOCI, TAST) %>%
+  select(pair, year, total, totalTraps, BLBR, PELE, PEME, PEMA, SOCI, TAST) %>%
   group_by(year, pair) %>%
   summarise_all(sum) %>%
-  filter(pair %in% gram$pair)
+  filter(pair %in% plant$pair) %>%
+  ungroup() %>%
+  mutate(pair = factor(pair))
+
 ```
 
 ```{r model with total mast and t, t-1, t-2}
@@ -123,130 +128,11 @@ p14 <- plant$pair[plant$year == 2014]
 p13 <- plant$pair[plant$year == 2013]
 set2015 <- Reduce(intersect, list(m15, p15, p14, p13))
 
-mammal2018 <- mammal %>%
-  filter(pair %in% set2018) %>%
-  filter(year == 2018)
-
-mammal2017 <- mammal %>%
-  filter(pair %in% set2017) %>%
-  filter(year == 2017)
-
-mammal2016 <- mammal %>%
-  filter(pair %in% set2016) %>%
-  filter(year == 2016)
-
-mammal2015 <- mammal %>%
-  filter(pair %in% set2015) %>%
-  filter(year == 2015)
-
-mammal <- bind_rows(mammal2018, mammal2017, mammal2016, mammal2015)
-
-plant2018t <- plant %>%
-  filter(pair %in% set2018) %>%
-  filter(year == 2018)
-
-plant2017t <- plant %>%
-  filter(pair %in% set2017) %>%
-  filter(year == 2017)
-
-plant2016t <- plant %>%
-  filter(pair %in% set2016) %>%
-  filter(year == 2016)
-
-plant2015t <- plant %>%
-  filter(pair %in% set2015) %>%
-  filter(year == 2015)
-
-plantt <- bind_rows(plant2018t, plant2017t, plant2016t, plant2015t) %>%
-  select(pair, total)
-
-plant2017t_1 <- plant %>%
-  filter(pair %in% set2018) %>%
-  filter(year == 2017)
-
-plant2016t_1 <- plant %>%
-  filter(pair %in% set2017) %>%
-  filter(year == 2016)
-
-plant2015t_1 <- plant %>%
-  filter(pair %in% set2016) %>%
-  filter(year == 2015)
-
-plant2014t_1 <- plant %>%
-  filter(pair %in% set2015) %>%
-  filter(year == 2014)
-
-plantt_1 <- bind_rows(plant2017t_1, plant2016t_1, plant2015t_1, plant2014t_1) %>%
-  select(pair, total)
-
-plant2016t_2 <- plant %>%
-  filter(pair %in% set2018) %>%
-  filter(year == 2016)
-
-plant2015t_2 <- plant %>%
-  filter(pair %in% set2017) %>%
-  filter(year == 2015)
-
-plant2014t_2 <- plant %>%
-  filter(pair %in% set2016) %>%
-  filter(year == 2014)
-
-plant2013t_2 <- plant %>%
-  filter(pair %in% set2015) %>%
-  filter(year == 2013)
-
-plantt_2 <- bind_rows(plant2016t_2, plant2015t_2, plant2014t_2, plant2013t_2) %>%
-  select(pair, total)
-
-xdata <- plantt %>%
-  rename(t = total) %>%
-  mutate(t_1 = plantt_1$total, t_2 = plantt_2$total) %>%
-  select(-pair)
-xdata <- data.frame(xdata)
-
-ydata <- mammal %>%
-  ungroup() %>%
-  select(BLBR, PELE, SOCI, TAST)
-ydata <- data.frame(ydata)
-
-edata <- mammal %>%
-  ungroup() %>%
-  select(totalTraps)
-
-edata <- as.matrix(edata)
-S <- length(ydata)
-n <- length(ydata$BLBR)
-ef <- list(columns = 1:S, values = edata)
-formula <- as.formula(~ t+t_1+t_2)
-modelList <- list(typeNames = c('DA'), effort = ef, ng = 10000, burnin = 1000)
-pmTotalLag3Output <- gjam(formula = formula, xdata = xdata, ydata = ydata, modelList = modelList)
-
-# gjam plots
-pl <- list(GRIDPLOTS = TRUE, SAVEPLOTS = FALSE)
-gjamPlot(output = pmTotalLag3Output, plotPars = pl)
-
-```
-
-```{r model with genera at t-1}
-m18 <- mammal$pair[mammal$year == 2018]
-p17 <- plant$pair[plant$year == 2017]
-set2018 <- Reduce(intersect, list(m18, p17))
-
-m17 <- mammal$pair[mammal$year == 2017]
-p16 <- plant$pair[plant$year == 2016]
-set2017 <- Reduce(intersect, list(m17, p16))
-
-m16 <- mammal$pair[mammal$year == 2016]
-p15 <- plant$pair[plant$year == 2015]
-set2016 <- Reduce(intersect, list(m16, p15))
-
-m15 <- mammal$pair[mammal$year == 2015]
-p14 <- plant$pair[plant$year == 2014]
-set2015 <- Reduce(intersect, list(m15, p14))
-
 m14 <- mammal$pair[mammal$year == 2014]
+p14 <- plant$pair[plant$year == 2014]
 p13 <- plant$pair[plant$year == 2013]
-set2014 <- Reduce(intersect, list(m14, p13))
+p12 <- plant$pair[plant$year == 2012]
+set2014 <- Reduce(intersect, list(m14, p14, p13, p12))
 
 mammal2018 <- mammal %>%
   filter(pair %in% set2018) %>%
@@ -270,6 +156,288 @@ mammal2014 <- mammal %>%
 
 mammal <- bind_rows(mammal2018, mammal2017, mammal2016, mammal2015, mammal2014)
 
+plant2018t <- plant %>%
+  filter(pair %in% set2018) %>%
+  filter(year == 2018)
+
+plant2017t <- plant %>%
+  filter(pair %in% set2017) %>%
+  filter(year == 2017)
+
+plant2016t <- plant %>%
+  filter(pair %in% set2016) %>%
+  filter(year == 2016)
+
+plant2015t <- plant %>%
+  filter(pair %in% set2015) %>%
+  filter(year == 2015)
+
+plant2014t <- plant %>%
+  filter(pair %in% set2014) %>%
+  filter(year == 2014)
+
+plantt <- bind_rows(plant2018t, plant2017t, plant2016t, plant2015t, plant2014t) %>%
+  select(pair, total)
+
+plant2017t_1 <- plant %>%
+  filter(pair %in% set2018) %>%
+  filter(year == 2017)
+
+plant2016t_1 <- plant %>%
+  filter(pair %in% set2017) %>%
+  filter(year == 2016)
+
+plant2015t_1 <- plant %>%
+  filter(pair %in% set2016) %>%
+  filter(year == 2015)
+
+plant2014t_1 <- plant %>%
+  filter(pair %in% set2015) %>%
+  filter(year == 2014)
+
+plant2013t_1 <- plant %>%
+  filter(pair %in% set2014) %>%
+  filter(year == 2013)
+
+plantt_1 <- bind_rows(plant2017t_1, plant2016t_1, plant2015t_1, plant2014t_1, plant2013t_1) %>%
+  select(pair, total)
+
+plant2016t_2 <- plant %>%
+  filter(pair %in% set2018) %>%
+  filter(year == 2016)
+
+plant2015t_2 <- plant %>%
+  filter(pair %in% set2017) %>%
+  filter(year == 2015)
+
+plant2014t_2 <- plant %>%
+  filter(pair %in% set2016) %>%
+  filter(year == 2014)
+
+plant2013t_2 <- plant %>%
+  filter(pair %in% set2015) %>%
+  filter(year == 2013)
+
+plant2012t_2 <- plant %>%
+  filter(pair %in% set2014) %>%
+  filter(year == 2012)
+
+plantt_2 <- bind_rows(plant2016t_2, plant2015t_2, plant2014t_2, plant2013t_2, plant2012t_2) %>%
+  select(pair, total)
+
+xdata <- plantt %>%
+  rename(t = total) %>%
+  mutate(t_1 = plantt_1$total, t_2 = plantt_2$total) %>%
+  select(-pair)
+xdata <- data.frame(xdata)
+
+ydata <- mammal %>%
+  ungroup() %>%
+  select(BLBR, PELE, PEME, PEMA, SOCI, TAST)
+ydata <- data.frame(ydata)
+
+edata <- mammal %>%
+  ungroup() %>%
+  select(totalTraps)
+
+edata <- as.matrix(edata)
+S <- length(ydata)
+n <- length(ydata$BLBR)
+ef <- list(columns = 1:S, values = edata)
+formula <- as.formula(~ t+t_1+t_2)
+modelList <- list(typeNames = c('DA'), effort = ef, ng = 10000, burnin = 1000)
+pmTotalLag3Output <- gjam(formula = formula, xdata = xdata, ydata = ydata, modelList = modelList)
+
+# gjam plots
+pl <- list(GRIDPLOTS = TRUE, SAVEPLOTS = FALSE)
+gjamPlot(output = pmTotalLag3Output, plotPars = pl)
+
+```
+
+```{r model with total mast and t, t-1}
+plant$total <- rowSums(plant[,3:length(plant)])
+
+m18 <- mammal$pair[mammal$year == 2018]
+p18 <- plant$pair[plant$year == 2018]
+p17 <- plant$pair[plant$year == 2017]
+p16 <- plant$pair[plant$year == 2016]
+set2018 <- Reduce(intersect, list(m18, p18, p17, p16))
+
+m17 <- mammal$pair[mammal$year == 2017]
+p17 <- plant$pair[plant$year == 2017]
+p16 <- plant$pair[plant$year == 2016]
+p15 <- plant$pair[plant$year == 2015]
+set2017 <- Reduce(intersect, list(m17, p17, p16, p15))
+
+m16 <- mammal$pair[mammal$year == 2016]
+p16 <- plant$pair[plant$year == 2016]
+p15 <- plant$pair[plant$year == 2015]
+p14 <- plant$pair[plant$year == 2014]
+set2016 <- Reduce(intersect, list(m16, p16, p15, p14))
+
+m15 <- mammal$pair[mammal$year == 2015]
+p15 <- plant$pair[plant$year == 2015]
+p14 <- plant$pair[plant$year == 2014]
+p13 <- plant$pair[plant$year == 2013]
+set2015 <- Reduce(intersect, list(m15, p15, p14, p13))
+
+m14 <- mammal$pair[mammal$year == 2014]
+p14 <- plant$pair[plant$year == 2014]
+p13 <- plant$pair[plant$year == 2013]
+p12 <- plant$pair[plant$year == 2012]
+set2014 <- Reduce(intersect, list(m14, p14, p13, p12))
+
+mammal2018 <- mammal %>%
+  filter(pair %in% set2018) %>%
+  filter(year == 2018)
+
+mammal2017 <- mammal %>%
+  filter(pair %in% set2017) %>%
+  filter(year == 2017)
+
+mammal2016 <- mammal %>%
+  filter(pair %in% set2016) %>%
+  filter(year == 2016)
+
+mammal2015 <- mammal %>%
+  filter(pair %in% set2015) %>%
+  filter(year == 2015)
+
+mammal2014 <- mammal %>%
+  filter(pair %in% set2014) %>%
+  filter(year == 2014)
+
+mammal <- bind_rows(mammal2018, mammal2017, mammal2016, mammal2015, mammal2014)
+
+plant2018t <- plant %>%
+  filter(pair %in% set2018) %>%
+  filter(year == 2018)
+
+plant2017t <- plant %>%
+  filter(pair %in% set2017) %>%
+  filter(year == 2017)
+
+plant2016t <- plant %>%
+  filter(pair %in% set2016) %>%
+  filter(year == 2016)
+
+plant2015t <- plant %>%
+  filter(pair %in% set2015) %>%
+  filter(year == 2015)
+
+plant2014t <- plant %>%
+  filter(pair %in% set2014) %>%
+  filter(year == 2014)
+
+plantt <- bind_rows(plant2018t, plant2017t, plant2016t, plant2015t, plant2014t) %>%
+  select(pair, total)
+
+plant2017t_1 <- plant %>%
+  filter(pair %in% set2018) %>%
+  filter(year == 2017)
+
+plant2016t_1 <- plant %>%
+  filter(pair %in% set2017) %>%
+  filter(year == 2016)
+
+plant2015t_1 <- plant %>%
+  filter(pair %in% set2016) %>%
+  filter(year == 2015)
+
+plant2014t_1 <- plant %>%
+  filter(pair %in% set2015) %>%
+  filter(year == 2014)
+
+plant2013t_1 <- plant %>%
+  filter(pair %in% set2014) %>%
+  filter(year == 2013)
+
+plantt_1 <- bind_rows(plant2017t_1, plant2016t_1, plant2015t_1, plant2014t_1, plant2013t_1) %>%
+  select(pair, total)
+
+
+xdata <- plantt %>%
+  rename(t = total) %>%
+  mutate(t_1 = plantt_1$total) %>%
+  select(-pair)
+xdata <- data.frame(xdata)
+
+ydata <- mammal %>%
+  ungroup() %>%
+  select(BLBR, PELE, PEMA, SOCI, TAST)
+ydata <- data.frame(ydata)
+
+edata <- mammal %>%
+  ungroup() %>%
+  select(totalTraps)
+
+edata <- as.matrix(edata)
+S <- length(ydata)
+n <- length(ydata$BLBR)
+ef <- list(columns = 1:S, values = edata)
+formula <- as.formula(~ t+t_1)
+modelList <- list(typeNames = c('DA'), effort = ef, ng = 10000, burnin = 1000)
+pmTotalLag2Output <- gjam(formula = formula, xdata = xdata, ydata = ydata, modelList = modelList)
+
+# gjam plots
+pl <- list(SAVEPLOTS = TRUE)
+gjamPlot(output = pmTotalLag2Output, plotPars = pl)
+
+
+save(pmTotalLag2Output, file = 'pmTotalLag2Output.rdata')
+```
+
+```{r model with genera at t-1}
+m18 <- mammal$pair[mammal$year == 2018]
+p17 <- plant$pair[plant$year == 2017]
+set2018 <- Reduce(intersect, list(m18, p17))
+
+m17 <- mammal$pair[mammal$year == 2017]
+p16 <- plant$pair[plant$year == 2016]
+set2017 <- Reduce(intersect, list(m17, p16))
+
+m16 <- mammal$pair[mammal$year == 2016]
+p15 <- plant$pair[plant$year == 2015]
+set2016 <- Reduce(intersect, list(m16, p15))
+
+m15 <- mammal$pair[mammal$year == 2015]
+p14 <- plant$pair[plant$year == 2014]
+set2015 <- Reduce(intersect, list(m15, p14))
+
+m14 <- mammal$pair[mammal$year == 2014]
+p13 <- plant$pair[plant$year == 2013]
+set2014 <- Reduce(intersect, list(m14, p13))
+
+m13 <- mammal$pair[mammal$year == 2013]
+p12 <- plant$pair[plant$year == 2012]
+set2013 <- Reduce(intersect, list(m13, p12))
+
+mammal2018 <- mammal %>%
+  filter(pair %in% set2018) %>%
+  filter(year == 2018)
+
+mammal2017 <- mammal %>%
+  filter(pair %in% set2017) %>%
+  filter(year == 2017)
+
+mammal2016 <- mammal %>%
+  filter(pair %in% set2016) %>%
+  filter(year == 2016)
+
+mammal2015 <- mammal %>%
+  filter(pair %in% set2015) %>%
+  filter(year == 2015)
+
+mammal2014 <- mammal %>%
+  filter(pair %in% set2014) %>%
+  filter(year == 2014)
+
+mammal2013 <- mammal %>%
+  filter(pair %in% set2013) %>%
+  filter(year == 2013)
+
+mammal <- bind_rows(mammal2018, mammal2017, mammal2016, mammal2015, mammal2014, mammal2013)
+
 plant2018 <- plant %>%
   filter(pair %in% set2018) %>%
   filter(year == 2017)
@@ -290,14 +458,18 @@ plant2014 <- plant %>%
   filter(pair %in% set2014) %>%
   filter(year == 2013)
 
-xdata <- bind_rows(plant2018, plant2017, plant2016, plant2015, plant2014) %>%
+plant2013 <- plant %>%
+  filter(pair %in% set2013) %>%
+  filter(year == 2012)
+
+xdata <- bind_rows(plant2018, plant2017, plant2016, plant2015, plant2014, plant2013) %>%
   ungroup() %>%
-  select(-year, -pair)
+  select(-year, -pair, -total)
 xdata <- data.frame(xdata)
 
 ydata <- mammal %>%
   ungroup %>%
-  select(BLBR, PELE, SOCI, TAST)
+  select(BLBR, PELE, TAST)
 ydata <- data.frame(ydata)
 
 edata <- mammal %>%
@@ -310,12 +482,107 @@ edata <- as.matrix(edata)
 S <- length(ydata)
 n <- length(ydata$BLBR)
 ef <- list(columns = 1:S, values = edata)
-formula <- as.formula(~ Betula+Carya+Cornus+Fagus+Fraxinus+Ilex+Oxydendron+Picea+Pinus+Quercus+Tsuga)
+formula <- as.formula(~ Acer+Betula+Carya+Cornus+Fagus+Fraxinus+Ilex+Liquidambar+Nyssa+Picea+Pinus+Quercus+Tsuga)
 modelList <- list(typeNames = c('DA'), effort = ef, ng = 10000, burnin = 1000)
-pmHostOutput <- gjam(formula = formula, xdata = xdata, ydata = ydata, modelList = modelList)
+pmHostT1Output <- gjam(formula = formula, xdata = xdata, ydata = ydata, modelList = modelList)
 
 # gjam plots
-pl <- list(GRIDPLOTS = TRUE, SAVEPLOTS = FALSE)
-gjamPlot(output = pmHostOutput, plotPars = pl)
+pl <- list(SAVEPLOTS = TRUE)
+gjamPlot(output = pmHostT1Output, plotPars = pl)
 
+save(pmHostT1Output, file = 'pmHostT1Output.rdata')
+```
+
+```{r model with genera at t}
+m17 <- mammal$pair[mammal$year == 2017]
+p17 <- plant$pair[plant$year == 2017]
+set2017 <- Reduce(intersect, list(m17, p17))
+
+m16 <- mammal$pair[mammal$year == 2016]
+p16 <- plant$pair[plant$year == 2016]
+set2016 <- Reduce(intersect, list(m16, p16))
+
+m15 <- mammal$pair[mammal$year == 2015]
+p15 <- plant$pair[plant$year == 2015]
+set2015 <- Reduce(intersect, list(m15, p15))
+
+m14 <- mammal$pair[mammal$year == 2014]
+p14 <- plant$pair[plant$year == 2014]
+set2014 <- Reduce(intersect, list(m14, p14))
+
+m13 <- mammal$pair[mammal$year == 2013]
+p13 <- plant$pair[plant$year == 2013]
+set2013 <- Reduce(intersect, list(m13, p13))
+
+mammal2017 <- mammal %>%
+  filter(pair %in% set2017) %>%
+  filter(year == 2017)
+
+mammal2016 <- mammal %>%
+  filter(pair %in% set2016) %>%
+  filter(year == 2016)
+
+mammal2015 <- mammal %>%
+  filter(pair %in% set2015) %>%
+  filter(year == 2015)
+
+mammal2014 <- mammal %>%
+  filter(pair %in% set2014) %>%
+  filter(year == 2014)
+
+mammal2013 <- mammal %>%
+  filter(pair %in% set2013) %>%
+  filter(year == 2013)
+
+mammal <- bind_rows(mammal2017, mammal2016, mammal2015, mammal2014, mammal2013)
+
+plant2017 <- plant %>%
+  filter(pair %in% set2017) %>%
+  filter(year == 2017)
+
+plant2016 <- plant %>%
+  filter(pair %in% set2016) %>%
+  filter(year == 2016)
+
+plant2015 <- plant %>%
+  filter(pair %in% set2015) %>%
+  filter(year == 2015)
+
+plant2014 <- plant %>%
+  filter(pair %in% set2014) %>%
+  filter(year == 2014)
+
+plant2013 <- plant %>%
+  filter(pair %in% set2013) %>%
+  filter(year == 2013)
+
+xdata <- bind_rows(plant2017, plant2016, plant2015, plant2014, plant2013) %>%
+  ungroup() %>%
+  select(-year, -pair, -total)
+xdata <- data.frame(xdata)
+
+ydata <- mammal %>%
+  ungroup %>%
+  select(PEMA, SOCI)
+ydata <- data.frame(ydata)
+
+edata <- mammal %>%
+  ungroup %>%
+  select(totalTraps)
+
+paste(names(xdata), collapse='+')
+  
+edata <- as.matrix(edata)
+S <- length(ydata)
+n <- length(ydata$BLBR)
+ef <- list(columns = 1:S, values = edata)
+formula <- as.formula(~ Acer+Betula+Carya+Cornus+Fagus+Fraxinus+Ilex+Liquidambar+Nyssa+Picea+Pinus+Quercus+Tsuga)
+modelList <- list(typeNames = c('DA'), effort = ef, ng = 10000, burnin = 1000)
+pmHostTOutput <- gjam(formula = formula, xdata = xdata, ydata = ydata, modelList = modelList)
+
+# gjam plots
+pl <- list(SAVEPLOTS = TRUE)
+gjamPlot(output = pmHostTOutput, plotPars = pl)
+
+save(pmHostTOutput, file = 'pmHostTOutput.rdata')
 ```

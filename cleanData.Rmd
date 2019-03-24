@@ -94,7 +94,7 @@ species <- do.call('rbind', lapply(files, read.csv, header = TRUE)) %>%
                                  `BECAC` = 'betuUNKN', `BELE` = 'betuLent', `BEPA` = 'betuPapy', `BEPAC2` = 'betuPapy', `BEPAP` = 'betuPapy',
                                  `BEPO` = 'betuPopu', `FAGR` = 'faguGran', `FRAM2` = 'fraxAmer', `FRAXI` = 'fraxUNKN', `FRPE` = 'fraxPenn', 
                                  `HAVI4` = 'hamaVirg', `OSVI` = 'ostrVirg', `PICEA` = 'piceUNKN', `PINACE` = 'pinuUNKN', `PINUS` = 'pinuUNKN', 
-                                 `PIST` = 'pinuStrob', `POGR4` = 'popuGran', `POTR5` = 'popuTrem', `PRPE2` = 'prunPens', `PRPEP` = 'prunPens',
+                                 `PIST` = 'pinuStro', `POGR4` = 'popuGran', `POTR5` = 'popuTrem', `PRPE2` = 'prunPens', `PRPEP` = 'prunPens',
                                  `QURU` = 'querRubr', `TAXUS` = 'taxuUNKN', `TIAM` = 'tiliAmer', `TSCA` = 'tsugCana', `ULAM` = 'ulmuAmer',
                                  `VILA` = 'vibuLant', `VILA11` = 'vibuLant', `ACNEN` = 'acerNegu', `AIAL` = 'ailaAlti', `ASIMI` = 'asimUNKN', 
                                  `CACO15` = 'caryCord', `CAGL8` = 'caryGlab', `CAOV3` = 'caryOval', `CARYA` = 'caryUNKN', `CATO6` = 'caryTome', 
@@ -253,7 +253,7 @@ plots <- do.call('rbind', lapply(files, read.csv, header = TRUE)) %>%
 ```
 
 ```{r plants}
-sites <- c('BART', 'BLAN', 'DSNY', 'GRSM', 'HARV', 'OSBS', 'SCBI', 'SERC')
+sites <- c('BART', 'BLAN', 'DSNY', 'GRSM', 'HARV', 'SCBI', 'SERC')
 
 cleanPlantData <- function(site){
   prpath <- paste0('/Users/taylorminich/Documents/grad/mp/data/plants/raw/', site)
@@ -268,14 +268,13 @@ cleanPlantData <- function(site){
   assign(site, do.call('rbind', lapply(files, read.csv, header = TRUE)))
   
   tmp <- get(site) %>%  
-    left_join(id, by = c('individualID', 'eventID', 'plotID')) %>%
-    mutate(year = str_sub(eventID, -4, -1)) %>%
+    left_join(id, by = c('individualID', 'plotID')) %>%
     mutate(code = recode_factor(taxonID, `2PLANT` = 'unknUNKN', `ABIES` = 'abieUNKN', `ACER` = 'acerUNKN', `ACPE` = 'acerPens',
                                  `ACRU` = 'acerRubr', `ACSA2` = 'acerSac2', `ACSA3` = 'acerSacc', `ACSAS` = 'acerSacc', `BEAL2` = 'betuAlle',
                                  `BECAC` = 'betuUNKN', `BELE` = 'betuLent', `BEPA` = 'betuPapy', `BEPAC2` = 'betuPapy', `BEPAP` = 'betuPapy',
                                  `BEPO` = 'betuPopu', `FAGR` = 'faguGran', `FRAM2` = 'fraxAmer', `FRAXI` = 'fraxUNKN', `FRPE` = 'fraxPenn', 
                                  `HAVI4` = 'hamaVirg', `OSVI` = 'ostrVirg', `PICEA` = 'piceUNKN', `PINACE` = 'pinuUNKN', `PINUS` = 'pinuUNKN', 
-                                 `PIST` = 'pinuStrob', `POGR4` = 'popuGran', `POTR5` = 'popuTrem', `PRPE2` = 'prunPens', `PRPEP` = 'prunPens',
+                                 `PIST` = 'pinuStro', `POGR4` = 'popuGran', `POTR5` = 'popuTrem', `PRPE2` = 'prunPens', `PRPEP` = 'prunPens',
                                  `QURU` = 'querRubr', `TAXUS` = 'taxuUNKN', `TIAM` = 'tiliAmer', `TSCA` = 'tsugCana', `ULAM` = 'ulmuAmer',
                                  `VILA` = 'vibuLant', `VILA11` = 'vibuLant', `ACNEN` = 'acerNegu', `AIAL` = 'ailaAlti', `ASIMI` = 'asimUNKN', 
                                  `CACO15` = 'caryCord', `CAGL8` = 'caryGlab', `CAOV3` = 'caryOval', `CARYA` = 'caryUNKN', `CATO6` = 'caryTome', 
@@ -382,7 +381,9 @@ cleanPlantData <- function(site){
                                  `VIDE` = 'Viburnum', `AMCO2` = 'Ampelopsis', `COAM3` = 'Corylus', `EUATS` = 'Euonymus', `EUFO5` = 'Euonymus', 
                                  `GYDI` = 'Gymnocladus', `LIVU` = 'Ligustrum', `MORUS` = 'Morus', `PODE3` = 'Populus', `ROAR3` = 'Rosa',
                                  `EUAT5` = 'Euonymus', `DIVI5` = 'Diospyros', `PIPU5` = 'Pinus')) %>%
-    select(year, plotID, individualID, taxonID, code, genus, stemDiameter, measurementHeight, growthForm, plantStatus) %>%
+    select(plotID, individualID, taxonID, code, genus, stemDiameter, measurementHeight, growthForm, plantStatus) %>%
+    group_by(plotID, individualID, taxonID, code, genus, growthForm, plantStatus) %>%
+    summarise(stemDiameter = mean(stemDiameter), measurementHeight = mean(measurementHeight)) %>%
     na.omit()
 
 # create df with necessary columns
@@ -404,51 +405,56 @@ BART <- read.csv(paste0(pppath, 'BART.csv')) %>%
   filter(plantStatus != 'Dead, broken bole' | plantStatus != 'Standing dead') %>%
   filter(genus != 'Unknown') %>%
   mutate(siteID = 'BART') %>%
-  select(individualID, plotID, siteID, year, code, genus, stemDiameter) 
+  group_by(individualID, plotID, siteID, code, genus) %>%
+  summarise(stemDiameter = mean(stemDiameter)) %>%
+  select(individualID, plotID, siteID, code, genus, stemDiameter) 
 
 BLAN <- read.csv(paste0(pppath, 'BLAN.csv')) %>%
   filter(measurementHeight > 100) %>%
   filter(plantStatus != 'Dead, broken bole' | plantStatus != 'Standing dead') %>%
   filter(genus != 'Unknown') %>%
   mutate(siteID = 'BLAN') %>%
-  select(individualID, plotID, siteID, year, code, genus, stemDiameter) 
+  group_by(individualID, plotID, siteID, code, genus) %>%
+  summarise(stemDiameter = mean(stemDiameter)) %>%
+  select(individualID, plotID, siteID, code, genus, stemDiameter) 
 
 GRSM <- read.csv(paste0(pppath, 'GRSM.csv')) %>%
   filter(measurementHeight > 100) %>%
   filter(plantStatus != 'Dead, broken bole' | plantStatus != 'Standing dead') %>%
   filter(genus != 'Unknown') %>%
   mutate(siteID = 'GRSM') %>%
-  select(individualID, plotID, siteID, year, code, genus, stemDiameter) 
+  group_by(individualID, plotID, siteID, code, genus) %>%
+  summarise(stemDiameter = mean(stemDiameter)) %>%
+  select(individualID, plotID, siteID, code, genus, stemDiameter) 
 
 HARV <- read.csv(paste0(pppath, 'HARV.csv')) %>%
   filter(measurementHeight > 100) %>%
   filter(plantStatus != 'Dead, broken bole' | plantStatus != 'Standing dead') %>%
   filter(genus != 'Unknown') %>%
   mutate(siteID = 'HARV') %>%
-  select(individualID, plotID, siteID, year, code, genus, stemDiameter) 
-
-OSBS <- read.csv(paste0(pppath, 'OSBS.csv')) %>%
-  filter(measurementHeight > 100) %>%
-  filter(plantStatus != 'Dead, broken bole' | plantStatus != 'Standing dead') %>%
-  filter(genus != 'Unknown') %>%
-  mutate(siteID = 'OSBS') %>%
-  select(individualID, plotID, siteID, year, code, genus, stemDiameter) 
+  group_by(individualID, plotID, siteID, code, genus) %>%
+  summarise(stemDiameter = mean(stemDiameter)) %>%
+  select(individualID, plotID, siteID, code, genus, stemDiameter) 
 
 SCBI <- read.csv(paste0(pppath, 'SCBI.csv')) %>%
   filter(measurementHeight > 100) %>%
   filter(plantStatus != 'Dead, broken bole' | plantStatus != 'Standing dead') %>%
   filter(genus != 'Unknown') %>%
   mutate(siteID = 'SCBI') %>%
-  select(individualID, plotID, siteID, year, code, genus, stemDiameter) 
+  group_by(individualID, plotID, siteID, code, genus) %>%
+  summarise(stemDiameter = mean(stemDiameter)) %>%
+  select(individualID, plotID, siteID, code, genus, stemDiameter) 
 
 SERC <- read.csv(paste0(pppath, 'SERC.csv')) %>%
   filter(measurementHeight > 100) %>%
   filter(plantStatus != 'Dead, broken bole' | plantStatus != 'Standing dead') %>%
   filter(genus != 'Unknown') %>%
   mutate(siteID = 'SERC') %>%
-  select(individualID, plotID, siteID, year, code, genus, stemDiameter) 
+  group_by(individualID, plotID, siteID, code, genus) %>%
+  summarise(stemDiameter = mean(stemDiameter)) %>%
+  select(individualID, plotID, siteID, code, genus, stemDiameter) 
 
-tree <- bind_rows(BART, BLAN, GRSM, HARV, OSBS, SCBI, SERC)
+tree <- bind_rows(BART, BLAN, GRSM, HARV, SCBI, SERC)
 write.csv(tree, file =  paste0(papath, 'tree.csv'), row.names = FALSE)
 ```
 
@@ -457,17 +463,27 @@ srpath <- '/Users/taylorminich/Documents/grad/mp/data/seeds/raw/'
 sppath <- '/Users/taylorminich/Documents/grad/mp/data/seeds/processed/'
 
 years <- 2013:2018
-sites <- c('BART', 'BLAN', 'GRSM', 'HARV', 'OSBS', 'SCBI', 'SERC')
+sites <- c('BART', 'BLAN', 'GRSM', 'HARV', 'SCBI', 'SERC')
 
 # acer
-#load(paste0(srpath, 'acerOutput.rdata'))
+### file to large to import###
+load(paste0(srpath, 'acerOutput.rdata'))
 
 acer <- output$parameters$betaFec %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
   mutate(parameter = as.factor(parameter)) %>%
-  mutate(parameter = sub('^$', '(intercept)', parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+acer <- output$parameters$betaRep %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
 
@@ -481,7 +497,16 @@ asimina <- output$parameters$betaFec %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
   mutate(parameter = as.factor(parameter)) %>%
-  mutate(parameter = sub('^$', '(intercept)', parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+asimina <- output$parameters$betaRep %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
 
@@ -499,16 +524,40 @@ betula <- output$parameters$betaFec %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
 
+betula <- output$parameters$betaRep %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
 
 remove(output)
 
 # carya
-#load(paste0(srpath, 'caryaOutput.rdata'))
+load(paste0(srpath, 'caryaOutput.rdata'))
 
-carya <- output$parameters$betaFec# %>%
+carya <- output$parameters$betaFec %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(tmp = sapply(strsplit(parameter, split = 'lab:', fixed = TRUE), function(x) (x[2]))) %>%
+  mutate(parameter = if_else(!is.na(tmp), tmp, parameter)) %>%
+  replace(.== 'lab', '') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+carya <- output$parameters$betaRep %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(tmp = sapply(strsplit(parameter, split = 'lab:', fixed = TRUE), function(x) (x[2]))) %>%
+  mutate(parameter = if_else(!is.na(tmp), tmp, parameter)) %>%
+  replace(.== 'lab', '') %>%
   mutate(parameter = as.factor(parameter)) %>%
   mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
   select(code, parameter, estimate) %>%
@@ -520,6 +569,15 @@ remove(output)
 load(paste0(srpath, 'cornusOutput.rdata'))
 
 cornus <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+cornus <- output$parameters$betaRep %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
@@ -541,6 +599,14 @@ fagus <- output$parameters$betaFec %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
 
+fagus <- output$parameters$betaRep %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'faguGran') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
 remove(output)
 
 # fraxinus
@@ -555,12 +621,30 @@ fraxinus <- output$parameters$betaFec %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
 
+fraxinus <- output$parameters$betaRep %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
 remove(output)
 
 # ilex 
 load(paste0(srpath, 'ilexOutput.rdata'))
 
 ilex <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+ilex <- output$parameters$betaRep %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
@@ -596,6 +680,14 @@ liriodendron <- output$parameters$betaFec %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
 
+liriodendron <- output$parameters$betaRep %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'liriTuli') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
 remove(output)
 
 # liquidambar
@@ -605,7 +697,15 @@ liquidambar <- output$parameters$betaFec %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(parameter = as.factor(parameter)) %>%
-  mutate(code = 'liqiStyr') %>%
+  mutate(code = 'liquStyr') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+liquidambar <- output$parameters$betaRep %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'liquStyr') %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
 
@@ -615,6 +715,14 @@ remove(output)
 load(paste0(srpath, 'nyssaOutput.rdata'))
 
 nyssa <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'nyssSylv') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+nyssa <- output$parameters$betaRep %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(parameter = as.factor(parameter)) %>%
@@ -635,12 +743,29 @@ oxydendrum <- output$parameters$betaFec %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
 
+oxydendrum <- output$parameters$betaRep %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'oxydArbo') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
 remove(output)
 
 # picea
 load(paste0(srpath, 'piceaOutput.rdata'))
 
 picea <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+picea <- output$parameters$betaRep %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
@@ -663,12 +788,30 @@ pinus <- output$parameters$betaFec %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
 
+pinus <- output$parameters$betaRep %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
 remove(output)
 
 # quercus
 load(paste0(srpath, 'quercusOutput.rdata'))
 
 quercus <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+quercus <- output$parameters$betaRep %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
@@ -691,6 +834,15 @@ rhododendron <- output$parameters$betaFec %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
 
+rhododenron <- output$parameters$betaRep %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
 remove(output)
 
 # tsuga
@@ -704,50 +856,45 @@ tsuga <- output$parameters$betaFec %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
 
+tsuga <- output$parameters$betaRep %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'tsugCana') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
 remove(output)
 
-params <- bind_rows(betula, cornus, fagus, fraxinus, ilex, liquidambar, liriodendron, nyssa, oxydendrum, picea, pinus, quercus, tsuga) %>%
-  rename(intercept = '(Intercept)', defAnomaly_beta = defAnomaly, defSiteWinterTminSite_beta = 'defSite:winterTminSite', 
-         defSite_beta = defSite, diam_beta = diam, diamSq_beta = 'I(diam^2)', 
+fecParams <- bind_rows(acer, betula, carya, cornus, fagus, fraxinus, ilex, liquidambar, 
+                    liriodendron, nyssa, oxydendrum, picea, pinus, quercus, tsuga) %>%
+  rename(interceptFec = '(Intercept)', defAnomaly_beta = defAnomaly, defSiteWinterTminSite_beta = 'defSite:winterTminSite', 
+         defSite_beta = defSite, diam_betaFec = diam, diamSq_beta = 'I(diam^2)', 
          winterTminSite_beta = winterTminSite)
 
-write.csv(params, file = paste0(sppath, 'params.csv'), row.names = FALSE)
+write.csv(fecParams, file = paste0(sppath, 'fecParams.csv'), row.names = FALSE)
+
+repParams <- bind_rows(acer, betula, carya, cornus, fagus, fraxinus, ilex, liquidambar, 
+                    liriodendron, nyssa, oxydendrum, picea, pinus, quercus, tsuga) %>%
+  rename(interceptRep = '(Intercept)', diam_betaRep = diam)
+
+write.csv(repParams, file = paste0(sppath, 'repParams.csv'), row.names = FALSE)
+
 
 ```
 
-```{r covariates}
-cppath <- '/Users/taylorminich/Documents/grad/mp/data/covariates/processed/'
-ppath <- '/Users/taylorminich/Documents/grad/mp/data/plots/'
-
-ppt <- read.csv(paste0(cppath, 'ppt.csv')) %>%
-  mutate(date = ymd(date))
-pet <- read.csv(paste0(cppath, 'pet.csv')) %>%
-  mutate(date = ymd(date))
-tmin <- read.csv(paste0(cppath, 'tmin.csv')) %>%
-  mutate(date = ymd(date))
-plots <- read.csv(paste0(ppath, 'plots.csv')) %>%
-  select(plotID, lon, lat) %>%
-  mutate(siteID = substr(plotID, 1, 4))
-
-GEEcoords <- plots %>%
-  geo_left_join(ppt, max_dist = 0.3, distance_col = 'distance') %>%
-  rename(lon = lon.y, lat = lat.y) %>%
-  select(plotID, lon, lat, distance, siteID) %>%
-  distinct() %>%
-  group_by(plotID) %>%
-  filter(distance %in% min(distance)) %>%
-  select(-distance)
-
-cov <- GEEcoords %>%
-  left_join(ppt, by = c('lat', 'lon')) %>%
-  left_join(tmin, by = c('date', 'lat', 'lon')) %>%
-  left_join(pet, by = c('date', 'lat', 'lon')) %>%
-  select(-siteID, -lon, -lat) %>%
-  group_by(plotID, month(date)) %>%
-  mutate(pet= if_else(is.na(pet), mean(pet, na.rm = TRUE), pet)) %>%
-  ungroup() %>%
-  select(-'month(date)')
+```{r climate from outputs}
+srpath <- '/Users/taylorminich/Documents/grad/mp/data/seeds/raw/'
+sppath <- '/Users/taylorminich/Documents/grad/mp/data/seeds/processed/'
 
 
-write.csv(cov, file = paste0(cppath, 'cov.csv'), row.names = FALSE)
+load(paste0(srpath, 'pinusOutput.rdata'))  # BART, SCBI, GRSM, HARV, 
+pine <- output
+
+load(paste0(srpath, 'betulaOutput.rdata'))
+betula <- output
+
+inputs <- output$inputs$treeData %>%
+  select(plot, year, winterTminSite, winterTminAnomaly, defSite, defAnomaly) %>%
+  mutate(siteID = recode_factor(plot, `BARTC1P1` = 'BART', `HARVBW` = 'HARV', `SCBILFDP` = 'SCBI', `GRSWBIS` = 'GRSM')) 
 ```

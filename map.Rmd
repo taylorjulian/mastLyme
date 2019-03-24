@@ -174,23 +174,17 @@ m
 ```
 
 ```{r plant plots}
-prpath <- '/Users/taylorminich/Documents/grad/mp/data/plants/raw/'
+prpath <- '/Users/taylorminich/Documents/grad/mp/data/plants/raw/id/'
+ppath <- '/Users/taylorminich/Documents/grad/mp/data/plots/'
 
 BART <- read.csv(paste0(prpath, 'BART.csv'))
 BLAN <- read.csv(paste0(prpath, 'BLAN.csv'))
-DSNY <- read.csv(paste0(prpath, 'DSNY.csv'))
 GRSM <- read.csv(paste0(prpath, 'GRSM.csv'))
 HARV <- read.csv(paste0(prpath, 'HARV.csv'))
-JERC <- read.csv(paste0(prpath, 'JERC.csv'))
-KONZ <- read.csv(paste0(prpath, 'KONZ.csv'))
-ORNL <- read.csv(paste0(prpath, 'ORNL.csv'))
-OSBS <- read.csv(paste0(prpath, 'OSBS.csv'))
 SCBI <- read.csv(paste0(prpath, 'SCBI.csv'))
 SERC <- read.csv(paste0(prpath, 'SERC.csv'))
-UKFS <- read.csv(paste0(prpath, 'UKFS.csv'))
 
-myPlots <- c(levels(BART$plotID),levels(BLAN$plotID), levels(DSNY$plotID), levels(GRSM$plotID), levels(HARV$plotID), levels(JERC$plotID), 
-             levels(KONZ$plotID), levels(ORNL$plotID), levels(OSBS$plotID), levels(SCBI$plotID), levels(SERC$plotID), levels(UKFS$plotID))
+myPlots <- c(levels(BART$plotID),levels(BLAN$plotID), levels(GRSM$plotID), levels(HARV$plotID),  levels(SCBI$plotID), levels(SERC$plotID))
 
 plantPlots <- read.csv(paste0(ppath, 'allPlots.csv')) %>%
   rename(lat = latitude, lon = longitude) %>%

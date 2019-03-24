@@ -10,7 +10,7 @@ cppath <- '/Users/taylorminich/Documents/grad/mp/data/covariates/processed/'
 ```
 
 ```{r calculate site climate GEE}
-sites <- c('BART', 'BLAN', 'GRSM', 'HARV', 'OSBS', 'SCBI', 'SERC')
+sites <- c('BART', 'BLAN', 'GRSM', 'HARV', 'SCBI', 'SERC')
 
 cov <- read.csv(paste0(cppath, 'cov.csv')) %>%
   mutate(def = ppt - pet)
@@ -19,26 +19,26 @@ def <- cov %>%
   mutate(siteID = substr(plotID, 1, 4)) %>%
   filter(siteID %in% sites) %>%
   filter(month(date) < 9 & month(date) > 5) %>%
-  group_by(plotID, year(date)) %>%
+  group_by(plotID, year(date), siteID) %>%
   summarise(def = sum(def)) %>%
   group_by(plotID) %>%
   mutate(defSite = mean(def)) %>%
   mutate(defAnomaly = def - defSite) %>%
-  rename(year = 'year(date)')
+  rename(year = 'year(date)') %>%
+  select(-def)
 
 tmin <- cov %>%
   mutate(siteID = substr(plotID, 1, 4)) %>%
   filter(siteID %in% sites) %>%
   filter(month(date) > 11 | month(date) < 4) %>%
-  group_by(plotID, year(date)) %>%
-  summarise(tmin = sum(tmin)) %>%
+  group_by(plotID, year(date), siteID) %>%
   mutate(winterTminSite = min(tmin)) %>%
-  mutate(winterTminAnomaly = tmin - winterTminSite)%>%
-  rename(year = 'year(date)')
+  rename(year = 'year(date)') %>%
+  select(plotID, siteID, year, winterTminSite) %>%
+  distinct()
 
 inputs <- def %>%
-  left_join(tmin, by = c('plotID', 'year')) %>%
-  select(-def, -tmin)
+  left_join(tmin, by = c('plotID', 'year', 'siteID')) 
 
 ```
 
@@ -50,8 +50,7 @@ def <- read.csv(paste0(cppath, 'def.csv')) %>%
   group_by(siteID) %>%
   mutate(defSite = mean(def)) %>%
   mutate(defAnomaly = def - defSite) %>%
-  rename(year = 'year(date)') %>%
-  mutate(year = year - 1) 
+  rename(year = 'year(date)') 
   
 winterTminSite <- read.csv(paste0(cppath, 'tmin.csv')) %>%
   filter(month(date) > 11 | month(date) < 4) %>%
@@ -75,22 +74,27 @@ inputs <- def %>%
 ```
 
 ```{r calculate mast}
-params <- read.csv(paste0(sppath, 'params.csv'))
+fecParams <- read.csv(paste0(sppath, 'fecParams.csv'))
+repParams <- read.csv(paste0(sppath, 'repParams.csv'))
+nutrition <- read.csv(paste0(spath, 'nutrition.csv'))
+
+genera <- c('Acer', 'Betula', 'Carya', 'Cornus', 'Fagus', 'Fraxinus', 'Ilex', 
+                    'Liriodendron', 'Nyssa', 'Oxydendrum', 'Picea', 'Pinus', 'Quercus', 'Tsuga')
 
 mast <- read.csv(paste0(papath, 'tree.csv')) %>%
-  select(-year) %>%
+  filter(genus %in% genera) %>%
+  mutate(code = recode_factor(code, `acerSac2` = 'acerUNKN')) %>%
   left_join(inputs, by = c('siteID')) %>%
+  na.omit() %>%
   mutate(code = recode_factor(code, `querGemi` = 'querRubr', `querHemi` = 'querRubr', `querLaev` = 'querRubr', `querMont` = 'querAlba',
                              `querMueh` = 'querAlba', `querNigr` = 'querRubr', `querUNKN` = 'querRubr',`querVirg` = 'querRubr', 
                              `pinuElli` = 'pinuPalu', `pinuPung` = 'pinuTaed', `pinuRube` = 'pinuTaed', `pinuUNKN` = 'pinuTaed', 
                              `piceAbie` = 'piceGlau', `piceUNKN` = 'piceGlau', `oxydUNKN` = 'oxydArbo', `nyssBifl` = 'nyssSylv',
                              `ilexCass` = 'ilexOpac', `ilexCori` = 'ilexOpac', `ilexGlab` = 'ilexOpac', `ilexMucr` = 'ilexOpac', 
-                             `cornUNKN` = 'cornFlor', `betuNigr` = 'betuLent', `betuPopu` = 'betuLent')) %>%
-  left_join(params, by = 'code') %>%
-  filter(year > 2012) %>%
-  na.omit() %>%
-  mutate(mast = intercept + diam_beta*stemDiameter + diamSq_beta*(stemDiameter^2) + defAnomaly_beta*defAnomaly + defSite_beta*defSite +
-           winterTminSite_beta*winterTminSite + defSiteWinterTminSite_beta*defSite*winterTminSite) %>%
+                             `cornUNKN` = 'cornFlor', `caryGlab` = 'caryOval', `betuNigr` = 'betuLent', `betuPopu` = 'betuLent')) %>%
+  left_join(fecParams, by = 'code') %>%
+  left_join(repParams, by = 'code') %>%
+  mutate(mast = exp(interceptRep + diam_betaRep*stemDiameter)*exp(interceptFec + diam_betaFec*stemDiameter + diamSq_beta*(stemDiameter^2) + defAnomaly_beta*defAnomaly + defSite_beta*defSite + winterTminSite_beta*winterTminSite + defSiteWinterTminSite_beta*defSite*winterTminSite)) %>%
   select(plotID, siteID, year, code, genus, mast)
 
 write.csv(mast, file = paste0(spath, 'mast.csv'), row.names = FALSE)

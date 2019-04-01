@@ -8,6 +8,7 @@ ipath <- '/Users/taylorminich/Documents/grad/mp/images/'
 rpath <- '/Users/taylorminich/Documents/grad/mp/results/'
 tapath <- '/Users/taylorminich/Documents/grad/mp/data/ticks/abundance/'
 mapath <- '/Users/taylorminich/Documents/grad/mp/data/mammals/abundance/'
+spath <- '/Users/taylorminich/Documents/grad/mp/data/seeds/'
 
 library(ggplot2)
 library(ggmap)
@@ -173,22 +174,28 @@ plotMap <- GRSMMap +
 ggsave(file = paste0(ipath, 'plotMap.png'), plotMap, device = NULL)
 ```
 
-
 ```{r plant-mammal lag model}
 load(paste0(rpath, 'pmTotalLag2Output.rdata'))
 
 cred <- pmTotalLag2Output$parameters$betaStandXWTable %>%
   rownames_to_column %>%
   separate(rowname, c('species','predictor'), sep = '_') %>%
-  mutate(species = recode_factor(species, `BLBR` = 'Blarina brevicauda', `PELE` = 'Peromyscus leucopus', `PEMA` = 'Peromyscus maniculatus',
-                                 `SOCI` = 'Sorex cinereus', `TAST` = 'Tamias striatus')) %>%
+  mutate(species = factor(species))  %>%
   mutate(predictor = factor(predictor, levels = c('t', 't1'))) %>%
   mutate(relationship = if_else(Estimate < 0, 'negative', 'positive')) %>%
   mutate(predictor = recode_factor(predictor, `t` = 't', `t1` = 't - 1'))
 
+cred$labs <- factor(cred$species, labels = c(
+           `BLBR` = expression(atop('Northern short-tailed shrew', italic('(Blarina brevicauda)'))), 
+           `PELE` = expression(atop('White-footed mouse', italic('(Peromyscus leucopus)'))), 
+           `PEMA` = expression(atop('Deer mouse', italic('(Peromyscus maniculatus)'))), 
+           `SOCI` = expression(atop('Common shrew', italic('(Sorex cinereus)'))), 
+           `TAST` = expression(atop('Eastern chipmunk', italic('(Tamias striatus)')))))
+
+
 pmLag <- ggplot(cred, aes(x = predictor, y = Estimate, col = relationship)) +
   geom_point() +
-  facet_grid(vars(species)) +
+  facet_grid(vars(labs), labeller = label_parsed) +
   scale_y_continuous(breaks = seq(-5, 5, 5), limits = c(-8.5, 8.5)) +
   geom_errorbar(aes(ymin = CI_025, ymax = CI_975), width = 0.1) +
   scale_color_manual(values=c("#E69F00", "#56B4E9")) +
@@ -201,6 +208,68 @@ pmLag <- ggplot(cred, aes(x = predictor, y = Estimate, col = relationship)) +
         text = element_text(size = 12))
 
 ggsave(file = paste0(ipath, 'pmLag.png'), pmLag, device = NULL, width = 7.5, height = 7.5)
+```
+
+```{r plant-mammal genera model}
+load(paste0(rpath, 'pmHostTOutput.rdata'))
+load(paste0(rpath, 'pmHostT1Output.rdata'))
+
+pmHostT <- data.frame(pmHostTOutput$parameters$betaStandXWTable) %>%
+  rownames_to_column %>%
+  separate(rowname, c('species', 'predictor'), sep = '_')
+
+pmHostT1 <- data.frame(pmHostT1Output$parameters$betaStandXWTable) %>%
+  rownames_to_column %>%
+  separate(rowname, c('species', 'predictor'), sep = '_')
+
+cred <- pmHostT %>%
+  bind_rows(pmHostT1) %>%
+  mutate(bottom = if_else(CI_025 < 0, -1, 1), top = if_else(CI_975 < 0, -1, 1)) %>%
+  mutate(sig = bottom + top) %>%
+  mutate(significance = as.factor(case_when(sig == -2 ~ 'negative relationship',
+                                  sig == 0 ~ 'non-significant',
+                                  sig == 2 ~ 'positive relationship'))) %>%
+  select(-sig, -bottom, -top) %>%
+  mutate(predictor = factor(predictor)) 
+
+
+cred$pred <- factor(cred$predictor, labels = c( `Acer` = expression(paste('Maple ', italic('(Acer)'))),
+                                   `Betula` = expression(paste('Birch ', italic('(Betula)'))),
+                                   `Carya` = expression(paste('Hickory ', italic('(Carya)'))),
+                                   `Cornus` = expression(paste('Dogwood ', italic('(Cornus)'))),
+                                   `Fagus` = expression(paste('Beech ', italic('(Fagus)'))),
+                                   `Fraxinus` = expression(paste('Ash ', italic('(Fraxinus)'))),
+                                   `Ilex` = expression(paste('Holly ', italic('(Ilex)'))),
+                                   `Liquidambar` = expression(paste('Sweet gum ', italic('(Liquidambar)'))),
+                                   `Nyssa` = expression(paste('Black gum ', italic('(Nyssa)'))),
+                                   `Picea` = expression(paste('Spruce ', italic('(Picea)'))),
+                                   `Pinus` = expression(paste('Pine ', italic('(Pinus)'))),
+                                   `Quercus` = expression(paste('Oak ', italic('(Quercus)'))),
+                                   `Tsuga` = expression(paste('Hemlock ', italic('(Tsuga)')))))
+
+cred$labs <- factor(cred$species, labels = c(
+           `BLBR` = expression(atop('Northern short-tailed shrew', italic('(Blarina brevicauda)'))), 
+           `PELE` = expression(atop('White-footed mouse', italic('(Peromyscus leucopus)'))), 
+           `PEMA` = expression(atop('Deer mouse', italic('(Peromyscus maniculatus)'))), 
+           `SOCI` = expression(atop('Common shrew', italic('(Sorex cinereus)'))), 
+           `TAST` = expression(atop('Eastern chipmunk', italic('(Tamias striatus)')))))
+
+pmGenera <- ggplot(cred, aes(x = pred, y = Estimate, col = significance)) + 
+  geom_point() +
+  facet_grid(vars(labs), labeller = label_parsed) +
+  geom_errorbar(aes(ymin = CI_025, ymax = CI_975), width = 0.1) +
+  scale_color_manual(values=c("#E69F00", "#999999", "#56B4E9")) +
+  scale_y_continuous(breaks = seq(-2, 2, 2), limits = c(-4, 4)) +
+  xlab('') +
+  theme_minimal() +
+  scale_x_discrete(labels = function(l) parse(text = l)) +
+  theme(legend.position = 'bottom', 
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 12),
+        panel.spacing.y = unit(0.2, 'lines'),
+        strip.text.y = element_text(angle = 0),
+        text = element_text(size = 13))
+
+ggsave(file = paste0(ipath, 'pmGenera.png'), pmGenera, device = NULL, width = 7.5, height = 7.5)
 ```
 
 ```{r mammal-tick lag model}
@@ -255,37 +324,44 @@ cred <- mtHostOutput$parameters$betaStandXWTable %>%
   mutate(significance = as.factor(case_when(sig == -2 ~ 'negative relationship',
                                   sig == 0 ~ 'non-significant',
                                   sig == 2 ~ 'positive relationship'))) %>%
-  select(-sig, -bottom, -top) %>%
-  mutate(species = recode_factor(species, `BLBR` = 'Blarina brevicauda', `BLCA` = 'Blarina carolinensis', `BLHY` = 'Blarina hylophaga', 
-                               `PELE` = 'Peromyscus leucopus', `PEMA` = 'Peromyscus maniculatus', `PEME` = 'Peromyscus merriami', 
-                                `SOCI` = 'Sorex cinereus', `TAST` = 'Tamias striatus'))
+  select(-sig, -bottom, -top) 
+
+cred$pred <- factor(cred$species, labels = c(
+           `BLBR` = expression(atop('Northern short-tailed shrew', italic('(Blarina brevicauda)'))), 
+           `BLCA` = expression(atop('Southern short-tailed shrew', italic('(Blarina carolinensis)'))),
+           `BLHY` = expression(atop("Elliot's short-tailed shrew", italic('(Blarina hylophaga)'))),
+           `PELE` = expression(atop('White-footed mouse', italic('(Peromyscus leucopus)'))),
+           `PEMA` = expression(atop('Deer mouse', italic('(Peromyscus maniculatus)'))), 
+           `PEME` = expression(atop('Mesquite mouse', italic('(Peromyscus merriami)'))),
+           `SOCI` = expression(atop('Common shrew', italic('(Sorex cinereus)'))), 
+           `TAST` = expression(atop('Eastern chipmunk', italic('(Tamias striatus)')))))
 
 tickLab <- c(`adultCount` = 'adult stage',
              `larvaCount` = 'larva stage',
              `nymphCount` = 'nymph stage')
 
-mtSpecies <- ggplot(cred, aes(x = species, y = Estimate, col = significance)) + 
+mtSpecies <- ggplot(cred, aes(x = pred, y = Estimate, col = significance)) + 
   geom_point() +
   facet_grid(vars(tick), labeller = labeller(tick = tickLab)) +
   geom_errorbar(aes(ymin = CI_025, ymax = CI_975), width = 0.1) +
   scale_color_manual(values=c("#E69F00", "#999999", "#56B4E9")) +
+  scale_x_discrete(labels = function(l) parse(text = l)) +
   scale_y_continuous(breaks = seq(-0.5, 0.5, 0.5), limits = c(-0.65, 0.65)) +
   xlab('') +
   theme_minimal() +
   theme(legend.position = 'bottom', 
-        axis.text.x = element_text(angle = 45, hjust = 1, size = 12),
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
         panel.spacing.y = unit(2, 'lines'),
         strip.text.y = element_text(angle = 0),
         text = element_text(size = 15))
 
-ggsave(file = paste0(ipath, 'mtSpecies.png'), mtSpecies, device = NULL, width = 7.5, height = 7.5)
+ggsave(file = paste0(ipath, 'mtSpecies.png'), mtSpecies, device = NULL, width = 9, height = 7.5)
 ```
 
 ```{r phylogeny}
-genera <- read.tree(text = '(((((((Fraxinus_-_ash, Ilex_-_holly), (Oxydendrum_-_sourwood, Rhododendron_-_rhododendron)), 
+genera <- read.tree(text = '(((((((Fraxinus_-_ash, Ilex_-_holly), Oxydendrum_-_sourwood)), 
                   (Cornus_-_dogwood, Nyssa_-_black_gum)), ((((Fagus_-_beech, Quercus_-_oak), Carya_-_hickory), 
-                  Betula_-_birch), Acer_-_maple)), Liquidambar_-_sweet_gum), ((Liriodendron_-_tulip_tree, Asimina_-_pawpaw), 
-                  Lindera_-_spicebush)), ((Pinus_-_pine, Picea_-_spruce), Tsuga_-_hemlock));')
+                  Betula_-_birch), Acer_-_maple)), Liquidambar_-_sweet_gum), ((Pinus_-_pine, Picea_-_spruce), Tsuga_-_hemlock));')
 plot(genera, edge.width = 1)
 
 png(file = '/Users/taylorminich/Documents/grad/mp/images/genera.png', width = 650, height = 650)
@@ -298,4 +374,131 @@ plot(species, edge.width = 1)
 png(file = '/Users/taylorminich/Documents/grad/mp/images/species.png', width = 650, height = 650)
 plot(species, edge.width = 1)
 dev.off()
+```
+
+```{r data visualization}
+nutrition <- read.csv(paste0(spath, 'nutrition.csv'))
+mast <- read.csv(paste0(spath, 'mast.csv')) 
+
+plant <- nutrition %>%
+  left_join(mast, by = c('code', 'genus')) %>%
+  filter(year > 2012) %>%
+  mutate(year = ymd(paste0(year, '-01-01'))) %>%
+  mutate(grams = mast*gmPerSeed) %>%
+  filter(grams < 100000) %>%
+  group_by(siteID) %>%
+  mutate(abundance = (grams-min(grams))/(max(grams)-min(grams)))
+  
+
+mammal <- read.csv(paste0(mapath, 'mammal.csv')) %>%
+    select(collectDate, siteID, total, totalTraps) %>%
+    mutate(collectDate = ymd(collectDate)) %>%
+    mutate(tmp = total/totalTraps) %>%
+    group_by(siteID) %>%
+    mutate(abundance = (tmp-min(tmp))/(max(tmp)-min(tmp))) %>%
+    select(collectDate, siteID, total, totalTraps, abundance)
+
+tick <- read.csv(paste0(tapath, 'tick.csv')) %>%
+    select(collectDate, siteID, totalCount, totalSampledArea) %>%
+    mutate(collectDate = ymd(collectDate)) %>%
+    mutate(tmp = totalCount/totalSampledArea) %>%
+    group_by(siteID) %>%
+    mutate(abundance = (tmp-min(tmp))/(max(tmp)-min(tmp))) %>%
+    select(collectDate, siteID, totalCount, totalSampledArea, abundance)
+
+
+ggplot(data = NULL) +
+      geom_point(data = plant, aes(x = year, y = abundance, colour = 'mast'), alpha = 0.3) +
+      geom_point(data = mammal, aes(x = collectDate, y = abundance, colour = 'mammal'), alpha = 0.3) +
+      geom_point(data = tick, aes(x = collectDate, y = abundance, colour = 'tick'), alpha = 0.3) +
+      facet_wrap(vars(siteID), ncol = 3) +
+      geom_line(data = plant, aes(x = year, y = abundance, colour = 'mast'), stat = 'smooth', method = 'loess', alpha = 0.9) +
+      geom_line(data = mammal, aes(x = collectDate, y = abundance, colour = 'mammal'), stat="smooth", method = "loess", alpha = 0.9) +
+      geom_line(data = tick, aes(x = collectDate, y = abundance, colour = 'tick'), 
+                stat="smooth",method = "loess", alpha = 0.9) +
+      scale_y_continuous(limits = c(0, 1)) +
+      xlab('Collection date') +
+      ylab('Relative abundance') +
+      scale_colour_manual(name = '', values = c(mast = '#004529', mammal = '#225ea8', tick = '#cc4c02')) +
+      theme_minimal() +
+      theme(legend.position = 'bottom')
+
+ggplot(data = NULL) +
+      geom_point(data = plant, aes(x = year, y = abundance, colour = 'mast'), alpha = 0.3) +
+      facet_wrap(vars(siteID), ncol = 3) +
+      geom_line(data = plant, aes(x = year, y = abundance, colour = 'mast'), stat = 'smooth', method = 'loess', alpha = 0.9)
+```
+
+```{r concluding lag} 
+t <- seq(0, 5, 0.01)
+mast <- -cos(t-1)*sin(2*t)+1.2
+
+mammalReact <- data.frame(-cos(t-1)*sin(2*t)+1.2)
+colnames(mammalReact) <- 'mammalReact'
+
+mammalAnticipate <- data.frame((-1/2)*(sin(3*t-1+3) + sin(t+1+1))+1.2)
+colnames(mammalAnticipate) <- 'mammalAnticipate'
+
+tickReact <- data.frame((-1/2)*(sin(3*t-1+3) + sin(t+1+1))+1.2)
+colnames(tickReact) <- 'tickReact'
+
+tickAnticipate <- data.frame(-cos(t-1)*sin(2*t)+1.2)
+colnames(tickAnticipate) <- 'tickAnticipate'
+
+df <- data.frame(t, mast, mammalReact, mammalAnticipate, tickReact, tickAnticipate) 
+
+mastReact <- ggplot(data = df, aes(t, mast)) +
+  geom_line() +
+  geom_area(fill = '#004529', col = '#004529', alpha = 0.5) +
+  scale_x_continuous(name ='year', labels = function(x) x+2000, breaks = pretty_breaks(n = 5)) +
+  scale_y_continuous(name = 'mast production') +
+  theme_minimal() +
+  theme(axis.text.y = element_blank()) 
+
+mastAnticipate <- ggplot(data = df, aes(t, mast)) +
+  geom_line() +
+  geom_area(fill = '#004529', col = '#004529', alpha = 0.5) +
+  scale_x_continuous(name ='year', labels = function(x) x+2000, breaks = pretty_breaks(n = 5)) +
+  ylab('') +
+  theme_minimal() +
+  theme(axis.text.y = element_blank()) 
+
+mammalReact <- ggplot(data = df) +
+  geom_line(aes(t, mammalReact)) +
+  geom_area(aes(t, mammalReact), fill = '#225ea8', col = '#225ea8', alpha = 0.3) +
+  scale_y_continuous(name = 'mammal abundance') +
+  theme_minimal() +
+  theme(axis.text.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.title.x = element_blank()) 
+
+mammalAnticipate <- ggplot(data = df) +
+  geom_line(aes(t, mammalAnticipate)) +
+  geom_area(aes(t, mammalAnticipate), fill = '#225ea8', col = '#225ea8', alpha = 0.3) +
+  theme_minimal() +
+  ylab('') +
+  theme(axis.text.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.title.x = element_blank()) 
+
+tickReact <- ggplot(data = df) +
+  geom_line(aes(t, tickReact)) +
+  geom_area(aes(t, tickReact), fill = '#cc4c02', col = '#cc4c02', alpha = 0.3) +
+  scale_y_continuous(name = 'tick abundance') +
+  theme_minimal() +
+  theme(axis.text.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.title.x = element_blank()) 
+
+tickAnticipate <- ggplot(data = df) +
+  geom_line(aes(t, tickAnticipate)) +
+  geom_area(aes(t, tickAnticipate), fill = '#cc4c02', col = '#cc4c02', alpha = 0.3) +
+  theme_minimal() +
+  ylab('') +
+  theme(axis.text.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.title.x = element_blank()) 
+
+lag <- grid.arrange(tickReact, tickAnticipate, mammalReact, mammalAnticipate, mastReact, mastAnticipate, layout_matrix = rbind(c(1, 2), c(3, 4), c(5, 6)))
+ggsave(file = paste0(ipath, 'lag.png'), lag, device = NULL, width = 7.5, height = 7.5)
 ```

@@ -113,7 +113,6 @@ ggplot(data = mammal) +
   theme_minimal()
 ```
 
-
 ```{r write tick data}
 sites <- c('BART', 'BLAN', 'DSNY', 'GRSM', 'HARV', 'JERC', 'KONZ', 'ORNL', 'OSBS', 'SCBI', 'SERC', 'UKFS')
 

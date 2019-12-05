@@ -7,42 +7,16 @@ papath <- '/Users/taylorminich/Documents/grad/mp/data/plants/abundance/'
 sppath <- '/Users/taylorminich/Documents/grad/mp/data/seeds/processed/'
 spath <- '/Users/taylorminich/Documents/grad/mp/data/seeds/'
 cppath <- '/Users/taylorminich/Documents/grad/mp/data/covariates/processed/'
-```
-
-```{r calculate site climate GEE}
-sites <- c('BART', 'BLAN', 'GRSM', 'HARV', 'SCBI', 'SERC')
-
-cov <- read.csv(paste0(cppath, 'cov.csv')) %>%
-  mutate(def = ppt - pet)
-
-def <- cov %>%
-  mutate(siteID = substr(plotID, 1, 4)) %>%
-  filter(siteID %in% sites) %>%
-  filter(month(date) < 9 & month(date) > 5) %>%
-  group_by(plotID, year(date), siteID) %>%
-  summarise(def = sum(def)) %>%
-  group_by(plotID) %>%
-  mutate(defSite = mean(def)) %>%
-  mutate(defAnomaly = def - defSite) %>%
-  rename(year = 'year(date)') %>%
-  select(-def)
-
-tmin <- cov %>%
-  mutate(siteID = substr(plotID, 1, 4)) %>%
-  filter(siteID %in% sites) %>%
-  filter(month(date) > 11 | month(date) < 4) %>%
-  group_by(plotID, year(date), siteID) %>%
-  mutate(winterTminSite = min(tmin)) %>%
-  rename(year = 'year(date)') %>%
-  select(plotID, siteID, year, winterTminSite) %>%
-  distinct()
-
-inputs <- def %>%
-  left_join(tmin, by = c('plotID', 'year', 'siteID')) 
-
+crpath <- '/Users/taylorminich/Documents/grad/mp/data/covariates/raw/'
+srpath <- '/Users/taylorminich/Documents/grad/mp/data/seeds/raw/'
 ```
 
 ```{r calculate site climate unix}
+  t1 <- mastClimate( file = paste0(crpath, 'tmin.csv'), months = 3:5, FUN = 'min')
+
+  treeData$springTminSite    <- signif(t1$x[,2],3)
+  treeData$springTminAnom <- signif(t1$x[,3], 3)
+
 def <- read.csv(paste0(cppath, 'def.csv')) %>%
   filter(month(date) < 9 & month(date) > 5) %>%
   group_by(siteID, year(date)) %>%
@@ -52,50 +26,329 @@ def <- read.csv(paste0(cppath, 'def.csv')) %>%
   mutate(defAnomaly = def - defSite) %>%
   rename(year = 'year(date)') 
   
-winterTminSite <- read.csv(paste0(cppath, 'tmin.csv')) %>%
-  filter(month(date) > 11 | month(date) < 4) %>%
-  mutate(year = if_else(month(date) == 12, year(date) + 1, year(date))) %>%
-  group_by(siteID, year) %>%
-  summarise(tmin = min(tmin)) %>%
-  group_by(siteID) %>%
-  summarise(winterTminSite = mean(tmin))
 
-tmin <- read.csv(paste0(cppath, 'tmin.csv')) %>%
-  filter(month(date) > 11 | month(date) < 4) %>%
-  mutate(year = if_else(month(date) == 12, year(date) + 1, year(date))) %>%
+springTminSite <- read.csv(paste0(crpath, 'tmin.csv'), check.names = FALSE) %>%
+  gather('year', 'temp', -siteID) %>%
+  separate(year, '_(?=[^_]*$)', into = c('year', 'month')) %>%
+  drop_na() %>%
+  filter(month < 6 & month > 2) %>%
   group_by(siteID, year) %>%
-  summarise(tmin = min(tmin)) %>% 
-  left_join(winterTminSite) %>%
-  mutate(winterTminAnomaly = tmin - winterTminSite)
+  summarise(tmin = min(temp)) %>%
+  group_by(siteID) %>%
+  summarise(springTminSite = mean(tmin))
+  
+
+tmin <- read.csv(paste0(crpath, 'tmin.csv'), check.names = FALSE) %>%
+  gather('year', 'temp', -siteID) %>%
+  separate(year, '_(?=[^_]*$)', into = c('year', 'month')) %>%
+  drop_na() %>%
+  filter(month < 6 & month > 2) %>%
+  group_by(siteID, year) %>%
+  summarise(tmin = min(temp)) %>% 
+  left_join(springTminSite, by = c('siteID' = 'siteID')) %>%
+  mutate(springTminAnomaly = tmin - springTminSite)
 
 inputs <- def %>%
   left_join(tmin, by = c('siteID', 'year'))
 
 ```
 
+```{r climate from outputs}
+srpath <- '/Users/taylorminich/Documents/grad/mp/data/seeds/raw/'
+sppath <- '/Users/taylorminich/Documents/grad/mp/data/seeds/processed/'
+
+
+load(paste0(srpath, 'pinusOutput.rdata'))  # BART, HARV, SCBI
+pinus <- output$inputs$treeData %>%
+  select(plot, year, springTminSite, springTminAnom, surDefSite, surDefAnom) %>%
+  mutate(siteID = recode_factor(plot, `BARTC1P1` = 'BART', `HARVBW` = 'HARV', `SCBILFDP` = 'SCBI')) %>%
+  filter(siteID %in% c('BART', 'HARV', 'SCBI')) %>%
+  select(-plot) %>%
+  distinct() %>%
+  filter(year > 2011)
+
+load(paste0(srpath, 'quercusOutput.rdata')) # GRSM, SERC (BLAN)
+quercus <- output$inputs$treeData %>%
+  select(plot, year, springTminSite, springTminAnom, surDefSite, surDefAnom) %>%
+  mutate(siteID = recode_factor(plot, `GRSMPK` = 'GRSM', `SERC001` = 'SERC', `SERC002` = 'BLAN')) %>%
+  filter(siteID %in% c('GRSM', 'SERC', 'BLAN')) %>%
+  select(-plot) %>%
+  distinct() %>%
+  filter(year > 2011)
+
+inputs <- rbind(quercus, pinus)
+write.csv(inputs, file = paste0(cppath, 'inputs.csv'), row.names = FALSE)
+```
+
 ```{r calculate mast}
 fecParams <- read.csv(paste0(sppath, 'fecParams.csv'))
 repParams <- read.csv(paste0(sppath, 'repParams.csv'))
 nutrition <- read.csv(paste0(spath, 'nutrition.csv'))
+shadeParams <- read.csv(paste0(sppath, 'shadeParams.csv'))
 
-genera <- c('Acer', 'Betula', 'Carya', 'Cornus', 'Fagus', 'Fraxinus', 'Ilex', 
-                    'Liriodendron', 'Nyssa', 'Oxydendrum', 'Picea', 'Pinus', 'Quercus', 'Tsuga')
+genera <- c('Abies', 'Acer', 'Ailanthus', 'Amelanchier', 'Asimina', 'Betula', 'Carpinus', 'Carya', 'Celtis', 'Cercis', 'Cornus', 'Diospyros', 'Fagus', 'Fraxinus', 'Ilex', 'Juglans', 
+            'Juniperus', 'Lindera', 'Liquidambar', 'Liriodendron', 'Magnolia', 'Nyssa', 'Ostrya', 'Oxydendrum', 'Paulownia', 'Picea', 'Pinus', 'Platanus', 'Prunus', 'Quercus', 'Robinia', 
+            'Sassafras', 'Sorbus', 'Tilia', 'Tsuga', 'Ulmus')
 
 mast <- read.csv(paste0(papath, 'tree.csv')) %>%
   filter(genus %in% genera) %>%
-  mutate(code = recode_factor(code, `acerSac2` = 'acerUNKN')) %>%
   left_join(inputs, by = c('siteID')) %>%
-  na.omit() %>%
-  mutate(code = recode_factor(code, `querGemi` = 'querRubr', `querHemi` = 'querRubr', `querLaev` = 'querRubr', `querMont` = 'querAlba',
-                             `querMueh` = 'querAlba', `querNigr` = 'querRubr', `querUNKN` = 'querRubr',`querVirg` = 'querRubr', 
-                             `pinuElli` = 'pinuPalu', `pinuPung` = 'pinuTaed', `pinuRube` = 'pinuTaed', `pinuUNKN` = 'pinuTaed', 
-                             `piceAbie` = 'piceGlau', `piceUNKN` = 'piceGlau', `oxydUNKN` = 'oxydArbo', `nyssBifl` = 'nyssSylv',
-                             `ilexCass` = 'ilexOpac', `ilexCori` = 'ilexOpac', `ilexGlab` = 'ilexOpac', `ilexMucr` = 'ilexOpac', 
-                             `cornUNKN` = 'cornFlor', `caryGlab` = 'caryOval', `betuNigr` = 'betuLent', `betuPopu` = 'betuLent')) %>%
   left_join(fecParams, by = 'code') %>%
   left_join(repParams, by = 'code') %>%
-  mutate(mast = exp(interceptRep + diam_betaRep*stemDiameter)*exp(interceptFec + diam_betaFec*stemDiameter + diamSq_beta*(stemDiameter^2) + defAnomaly_beta*defAnomaly + defSite_beta*defSite + winterTminSite_beta*winterTminSite + defSiteWinterTminSite_beta*defSite*winterTminSite)) %>%
+  left_join(shadeParams, by = c('code')) %>%
+  mutate(shade = as.numeric(shade)) %>%
+  group_by(genus) %>%
+  mutate(interceptRep = if_else(is.na(interceptRep), mean(interceptRep, na.rm = TRUE), interceptRep),
+    diam_betaRep = if_else(is.na(diam_betaRep), mean(diam_betaRep, na.rm = TRUE), diam_betaRep),
+    interceptFec = if_else(is.na(interceptFec), mean(interceptFec, na.rm = TRUE), interceptFec),
+    diam_betaFec = if_else(is.na(diam_betaFec), mean(diam_betaFec, na.rm = TRUE), diam_betaFec),
+    diamsurDefSite_beta = if_else(is.na(diamsurDefSite_beta), mean(diamsurDefSite_beta, na.rm = TRUE), diamsurDefSite_beta),
+    diamSq_beta = if_else(is.na(diamSq_beta), mean(diamSq_beta, na.rm = TRUE), diamSq_beta),
+    shade_beta = if_else(is.na(shade_beta), mean(shade_beta, na.rm = TRUE), shade_beta),
+    surDefAnom_beta = if_else(is.na(surDefAnom_beta), mean(surDefAnom_beta, na.rm = TRUE), surDefAnom_beta),
+    springTminAnom_beta = if_else(is.na(springTminAnom_beta), mean(springTminAnom_beta, na.rm = TRUE), springTminAnom_beta),
+    springTminSite_beta = if_else(is.na(springTminSite_beta), mean(springTminSite_beta, na.rm = TRUE), springTminSite_beta),
+    shade = if_else(is.na(shade), median(shade, na.rm = TRUE), shade)) %>%
+    mutate(mast = exp(interceptRep + diam_betaRep*stemDiameter)*exp(interceptFec + diam_betaFec*stemDiameter + diamsurDefSite_beta*stemDiameter*surDefSite + 
+                                                                    diamSq_beta*(stemDiameter)^2 + shade_beta*shade + surDefAnom_beta*surDefAnom + 
+                                                                    springTminAnom_beta*springTminAnom + springTminSite_beta*springTminSite)) %>%
   select(plotID, siteID, year, code, genus, mast)
 
+
 write.csv(mast, file = paste0(spath, 'mast.csv'), row.names = FALSE)
+```
+
+
+```{r calculate mast}
+# load tree, climate, and nutrition data
+inputs <- read.csv(paste0(cppath, 'inputs.csv'))
+tree <- read.csv(paste0(papath, 'tree.csv')) %>%
+  left_join(inputs, c('siteID')) %>%
+  rename(diam = stemDiameter)
+nutrition <- read.csv(paste0(spath, 'nutrition.csv'))
+
+# create list to store mast densities
+mastList <- list()
+
+# create vector of genera 
+genera <- c('abies', 'acer', 'ailanthus', 'amelanchier', 'betula', 'carpinus', 'carya', 'celtis', 'cercis', 'cornus', 'diospyros', 'fagus', 
+            'fraxinus', 'ilex', 'juglans', 'juniperus', 'lindera', 'liquidambar', 'liriodendron', 'magnolia', 'nyssa', 'ostrya', 'oxydendrum', 'paulownia', 
+            'picea', 'pinus', 'platanus', 'prunus', 'quercus', 'robinia', 'sassafras', 'sorbus', 'tilia', 'tsuga', 'ulmus')
+
+capitalize <- function(y) {
+  c <- strsplit(y, " ")[[1]]
+  paste(toupper(substring(c, 1,1)), substring(c, 2),
+      sep="", collapse=" ")
+}
+
+# for-loop to calculate mast in each genus separately
+
+for(genus in genera){
+  
+  Genus <- capitalize(genus)
+  
+  # load mastif output
+  load(paste0(srpath, genus, 'Output.rdata'))
+  
+  # define species modeled by mastif
+  speciesFreq <- output$inputs$treeData %>%
+    select(species) %>%
+    group_by(species) %>%
+    summarise(n = length(species))
+  
+  # recover shade data
+  shadeParams <- output$inputs$treeData %>%
+    group_by(species) %>%
+    summarise(shade = median(shade, na.rm = TRUE)) %>%
+    mutate(shade = if_else(is.na(shade), median(shade, na.rm = TRUE), shade)) %>%
+    mutate(species = as.factor(species))
+  
+  
+  # create tree data frame
+  df <- tree %>%
+    filter(genus == Genus) %>%
+    rename(species = code) %>%
+    mutate(species = as.factor(species)) %>%
+    inner_join(shadeParams, by = 'species') %>%
+    mutate(species = as.factor(if_else(species %in% speciesFreq$species, species, speciesFreq$species[speciesFreq$n==max(speciesFreq$n)]))) %>% # treat unknown species as the most frequent species
+    mutate(rowname = paste0(individualID, '_', year)) %>%
+    column_to_rownames('rowname')
+  
+  # if-else to recover parameters from a genus with multiple species vs a genus with one species vs carya
+  if(genus %in% c('abies', 'acer', 'amelanchier', 'betula', 'celtis', 'cornus', 'fraxinus', 'ilex', 'juglans', 
+                  'magnolia', 'picea', 'pinus', 'prunus', 'quercus', 'tilia', 'ulmus')){
+    
+      # recover fecundity parameters
+      fecParams <- output$parameters$betaFec %>%
+        as.data.frame() %>%
+        rownames_to_column(var = 'parameter') %>%
+        mutate(species = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+        mutate(parameter = as.factor(parameter)) %>%
+        mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+        select(species, parameter, estimate) %>%
+        spread(key = parameter, value = estimate) %>%
+        filter(species %in% df$species) %>%
+        mutate(rowname = species) %>%
+        column_to_rownames('rowname')
+      
+      # recover reproduction parameters
+      repParams <- output$parameters$betaRep %>%
+        as.data.frame() %>%
+        rownames_to_column(var = 'parameter') %>%
+        mutate(species = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+        mutate(parameter = as.factor(parameter)) %>%
+        mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+        select(species, parameter, estimate) %>%
+        spread(key = parameter, value = estimate) %>%
+        filter(species %in% df$species) %>%
+        mutate(rowname = species) %>%
+        column_to_rownames('rowname')
+                  } else if(genus %in% c('ailanthus', 'carpinus', 'cercis', 'diospyros', 'fagus', 
+                                         'juniperus', 'lindera', 'liquidambar', 'liriodendron', 'nyssa', 'ostrya', 'oxydendrum', 
+                                         'paulownia', 'platanus', 'robinia', 'sassafras', 'sorbus', 'tsuga')){
+                    
+                     # recover fecundity parameters
+                    fecParams <- output$parameters$betaFec %>%
+                    as.data.frame() %>%
+                    rownames_to_column(var = 'parameter') %>%
+                    mutate(parameter = as.factor(parameter)) %>%
+                    mutate(species = output$inputs$specNames[1]) %>%
+                    select(species, parameter, estimate) %>%
+                    spread(key = parameter, value = estimate) %>%
+                    filter(species %in% df$species) %>%
+                    mutate(rowname = species) %>%
+                    column_to_rownames('rowname')
+                    
+                    # recover reproduction parameters              
+                  repParams <- output$parameters$betaRep %>%
+                    as.data.frame() %>%
+                    rownames_to_column(var = 'parameter') %>%
+                    mutate(parameter = as.factor(parameter)) %>%
+                    mutate(species = output$inputs$specNames[1]) %>%
+                    select(species, parameter, estimate) %>%
+                    spread(key = parameter, value = estimate) %>%
+                    filter(species %in% df$species) %>%
+                    mutate(rowname = species) %>%
+                    column_to_rownames('rowname')
+                  } else {
+                          # recover fecundity parameters
+                        fecParams <- output$parameters$betaFec %>%
+                          as.data.frame() %>%
+                          rownames_to_column(var = 'parameter') %>%
+                          mutate(species = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+                          mutate(tmp = sapply(strsplit(parameter, split = 'lab:', fixed = TRUE), function(x) (x[2]))) %>%
+                          mutate(parameter = if_else(!is.na(tmp), tmp, parameter)) %>%
+                          replace(.== 'lab', '') %>%
+                          mutate(parameter = as.factor(parameter)) %>%
+                          mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+                          select(species, parameter, estimate) %>%
+                          spread(key = parameter, value = estimate) %>%
+                          filter(species %in% df$species) %>%
+                          mutate(rowname = species) %>%
+                          column_to_rownames('rowname')
+                        
+                          # recover reproduction parameters
+                        repParams <- output$parameters$betaRep %>%
+                          as.data.frame() %>%
+                          rownames_to_column(var = 'parameter') %>%
+                          mutate(species = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+                          mutate(tmp = sapply(strsplit(parameter, split = 'lab:', fixed = TRUE), function(x) (x[2]))) %>%
+                          mutate(parameter = if_else(!is.na(tmp), tmp, parameter)) %>%
+                          replace(.== 'lab', '') %>%
+                          mutate(parameter = as.factor(parameter)) %>%
+                          mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+                          select(species, parameter, estimate) %>%
+                          spread(key = parameter, value = estimate) %>%
+                          filter(species %in% df$species) %>%
+                          mutate(rowname = species) %>%
+                          column_to_rownames('rowname')                   
+                                         }
+  
+  
+  if(genus %in% c('acer', 'betula', 'carya', 'fraxinus', 'pinus', 'prunus', 'quercus', 'ulmus')){
+    # recover fecundity formula
+    formulaFec <- output$inputs$formulaFec
+    
+    # recover reproduction formula
+    formulaRep <- output$inputs$formulaRep
+  } else {
+    # recover fecundity formula
+    formulaFec <- output$inputs$formulaFec
+    formulaFec <- update(formulaFec, ~.-species -species:diam -species:surDefSite -species:I(diam^2) -species:shade -species:surDefAnom 
+              -species:springTminAnom -species:springTminSite -species:diam:surDefSite)
+    
+    # recover reproduction formula
+    formulaRep <- output$inputs$formulaRep
+    formulaRep <- update(formulaRep, ~.-species -species:diam)
+  }
+  
+  # create fecundity model matrix
+  mFec <- model.matrix(formulaFec, df)
+  # create fecundity coefficient model matrix
+  fecCols <- colnames(fecParams %>%
+                        select(-species))
+  
+  coefFec <- as.data.frame(model.matrix(formulaFec, fecParams)) %>%
+    select(-fecCols) %>%
+    cbind(fecParams) %>%
+    select(colnames(mFec)) %>%
+    as.matrix()
+  
+  # calculate mast from fecundity
+  mastFec <- t((coefFec %*% t(mFec)))
+  
+  # create reproduction model matrix
+  mRep <- model.matrix(formulaRep, df)
+  
+  # create reproduction coefficient model matrix
+  repCols <- colnames(repParams %>%
+                        select(-species))
+  
+  coefRep <- as.data.frame(model.matrix(formulaRep, repParams)) %>%
+    select(-repCols) %>%
+    cbind(repParams) %>%
+    select(colnames(mRep)) %>%
+    as.matrix()
+  
+  # calculate mast from reproduction
+  mastRep <- t(pnorm(coefRep %*% t(mRep)))
+  
+  # calculate total mast
+  tmp <- data.frame(mastFec * mastRep) %>%
+    rownames_to_column('rowname') %>%
+    separate(rowname, c('individualID', 'year'), '_') %>%
+    mutate(year = as.numeric(year)) %>%
+    gather(species, mast, -c(individualID, year))
+  
+  mast <- df %>%
+    left_join(tmp, c('individualID', 'year', 'species')) %>%
+    mutate(species = as.factor(species))
+  
+  mastList[[genus]] <- mast
+  print(genus)
+  remove(output)
+}
+
+mast <- do.call(rbind, mastList) %>%
+  mutate(mast = if_else(mast < 0, 0, mast))
+
+write.csv(mast, file = paste0(spath, 'mast.csv'), row.names = FALSE)
+```
+
+```{r create formula list}
+genera <- c('abies', 'acer', 'ailanthus', 'amelanchier', 'betula', 'carpinus', 'carya', 'celtis', 'cercis', 'cornus', 'diospyros', 'fagus', 
+            'fraxinus', 'ilex', 'juglans', 'juniperus', 'lindera', 'liquidambar', 'liriodendron', 'magnolia', 'nyssa', 'ostrya', 'oxydendrum', 'paulownia', 
+            'picea', 'pinus', 'platanus', 'prunus', 'quercus', 'robinia', 'sassafras', 'sorbus', 'tilia', 'tsuga', 'ulmus')
+
+fecList <- list()
+repList <- list()
+for(genus in genera){
+  load(paste0(srpath, genus, 'Output.rdata'))
+  formulaRep <- output$inputs$formulaRep
+  formulaFec <- output$inputs$formulaFec
+  fecList[[genus]] <- formulaFec
+  repList[[genus]] <- formulaRep
+  remove(output)
+  print(genus)
+}
 ```

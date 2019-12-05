@@ -76,10 +76,9 @@ mdf <- function(site, mplot, tplot){
   assign(site, read.csv(paste0(mapath, site, '.csv')))  %>%
     select(plotID, collectDate, totalTraps, everything()) %>%
     select(-domainID, -siteID, -geodeticDatum, -nlcdClass, -elevation, -lat, -lon) %>%
-    mutate(total = rowSums(.[,4:length(.)])) %>%
     left_join(pairs, by = c('plotID' = 'mplot')) %>%
     na.omit() %>%
-    select(pair, collectDate, total, totalTraps, everything()) %>%
+    select(pair, collectDate, totalTraps, everything()) %>%
     assign(site, ., envir = .GlobalEnv)
 
 }
@@ -101,8 +100,8 @@ mdf(siteUKFS, mplotUKFS, tplotUKFS)
 mammal <- bind_rows(BART, BLAN, DSNY, GRSM, HARV, JERC, KONZ, ORNL, OSBS, SCBI, SERC, UKFS) %>%
   replace(is.na(.), 0) %>%
   mutate(year = year(collectDate)) %>%
-  select(pair, year, total, totalTraps, everything()) %>%
-  select(-collectDate, -plotID, -tplot) %>%
+  select(pair, year, totalTraps, BLBR, PELE, PEMA, SOCI, TAST) %>%
+  mutate(total = rowSums(.[,4:length(.)])) %>%
   group_by(year, pair) %>%
   summarise_all(sum)
 
@@ -360,8 +359,9 @@ mammalt_2 <- bind_rows(mammal2016t_2, mammal2015t_2, mammal2014t_2, mammal2013t_
 xdata <- mammalt %>%
   rename(t = abundance) %>%
   mutate(t_1 = mammalt_1$abundance, t_2 = mammalt_2$abundance) %>%
-  select(-pair)
-xdata <- data.frame(xdata)
+  mutate(siteID = substr(pair, 1, 4)) %>%
+  select(-pair) %>%
+  as.data.frame()
 
 ydata <- tick %>%
   ungroup %>%
@@ -372,7 +372,7 @@ ydata <- data.frame(ydata)
 edata <- tick %>%
   ungroup %>%
   select(pair, totalSampledArea) %>%
-  mutate(adultCount = totalSampledArea, nymphCount = totalSampledArea, larvaCount = totalSampledArea) %>%
+  mutate(adultCount = as.numeric(totalSampledArea), nymphCount = as.numeric(totalSampledArea), larvaCount = as.numeric(totalSampledArea)) %>%
   select(-totalSampledArea) %>%
   select(-pair)
 
@@ -383,7 +383,8 @@ S <- length(ydata)
 n <- length(ydata$larvaCount)
 ef <- list(columns = 1:S, values = edata)
 formula <- as.formula(~ t+t_1+t_2)
-modelList <- list(typeNames = c('DA'), effort = ef, ng = 10000, burnin = 1000)
+modelList <- list(typeNames = c('DA'), effort = ef, ng = 100000, burnin = 5000, random = 'siteID')
+modelList$REDUCT <- FALSE
 mtTotalLag3Output <- gjam(formula = formula, xdata = xdata, ydata = ydata, modelList = modelList)
 
 # gjam plots
@@ -495,8 +496,9 @@ mammalt_1 <- bind_rows(mammal2017t_1, mammal2016t_1, mammal2015t_1, mammal2014t_
 xdata <- mammalt %>%
   rename(t = abundance) %>%
   mutate(t_1 = mammalt_1$abundance) %>%
-  select(-pair)
-xdata <- data.frame(xdata)
+  mutate(siteID = substr(pair, 1, 4)) %>%
+  select(-pair) %>%
+  as.data.frame()
 
 ydata <- tick %>%
   ungroup %>%
@@ -518,7 +520,8 @@ S <- length(ydata)
 n <- length(ydata$larvaCount)
 ef <- list(columns = 1:S, values = edata)
 formula <- as.formula(~ t+t_1)
-modelList <- list(typeNames = c('DA'), effort = ef, ng = 10000, burnin = 1000)
+modelList <- list(typeNames = c('DA'), effort = ef, ng = 100000, burnin = 5000, random = 'siteID')
+modelList$REDUCT <- FALSE
 mtTotalLag2Output <- gjam(formula = formula, xdata = xdata, ydata = ydata, modelList = modelList)
 
 # gjam plots
@@ -800,10 +803,10 @@ xdata <- bind_rows(mammal2018t, mammal2017t, mammal2016t, mammal2015t, mammal201
   mutate_if(is.integer, funs(as.numeric(.))) %>%
   select(-totalTraps, totalTraps, -year) %>%
   mutate_if(is.numeric, funs(./totalTraps)) %>%
-  select(-totalTraps, -OTHE, -total, -GLSA, -GLVO, -CRPA, -CRSP, -MIPE, -MIPI, -RARA, -ZAHU, -ORPA, 
-         -REHU, -OCNU, -ROSP,-MUER, -MUFR, -MUNI, -DIVI, -MRSP, -SUSP, -REME, -SPTR, -SYFL, -SCCA, 
-         -SRSP, -MYGA, -NAIN, -MUMU, -NEFL, -SIHI, -CHHI, -MIOC, -pair, -TAHU, -BLSP, -SOLO, -PEME, 
-         -SOFU, -PEPO, -PEGO, -BLCA, -BLHY, -PEMA, -PESP) 
+  select(-totalTraps, -total) %>%
+  mutate(siteID = substr(pair, 1, 4)) %>%
+  select(-pair) %>%
+  as.data.frame()
 
 ydata <- tick %>%
   ungroup %>%
@@ -824,8 +827,9 @@ edata <- as.matrix(edata)
 S <- length(ydata)
 n <- length(ydata$larvaCount)
 ef <- list(columns = 1:S, values = edata)
-formula <- as.formula(~ BLBR+PELE+SOCI+TAST)
-modelList <- list(typeNames = c('DA'), effort = ef, ng = 10000, burnin = 1000)
+formula <- as.formula(~ BLBR+PELE+SOCI+TAST+PEMA)
+modelList <- list(typeNames = c('DA'), effort = ef, ng = 100000, burnin = 5000, random = 'siteID')
+modelList$REDUCT <- FALSE
 mtHostOutput2 <- gjam(formula = formula, xdata = xdata, ydata = ydata, modelList = modelList)
 
 # gjam plots
@@ -834,3 +838,4 @@ gjamPlot(output = mtHostOutput2, plotPars = pl)
 
 save(mtHostOutput2, file = 'mtHostOutput2.rdata')
 ```
+

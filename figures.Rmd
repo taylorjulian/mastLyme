@@ -13,6 +13,15 @@ spath <- '/Users/taylorminich/Documents/grad/mp/data/seeds/'
 library(ggplot2)
 library(ggmap)
 library(ggrepel)
+library(directlabels)
+library(tidyverse)
+library(lubridate)
+library(googleway)
+library(ggspatial)
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(tmap)
 ```
 
 ```{r periodic mast}
@@ -68,6 +77,140 @@ trophic <- grid.arrange(tick, mammal, mast, layout_matrix = rbind(c(NA, 1), c(2,
 ggsave(file = paste0(ipath, 'trophic.png'), trophic, device = NULL, width = 13.33, height = 7.5)
 ```
 
+```{r inset map}
+theme_set(theme_bw())
+world <- ne_countries(scale = 'medium', returnclass = 'sf')
+
+mySites <- c('BART', 'BLAN', 'DSNY', 'GRSM', 'HARV', 'JERC', 'KONZ', 'ORNL', 'OSBS', 'SCBI', 'SERC', 'UKFS')
+mastSites <- c('BART', 'BLAN','GRSM', 'HARV', 'SCBI', 'SERC')
+
+sites <- read.csv(paste0(ppath, 'sites.csv')) %>%
+  filter(Site.ID %in% mySites) %>%
+  mutate(lat = as.numeric(substr(Lat..Long., 1, 7)), lon = as.numeric(substr(Lat..Long., 10, 18))) %>%
+  select(Site.Name, Site.ID, lat, lon) %>%
+  mutate(mastSite = as.factor(if_else(Site.ID %in% mastSites, 'MASTIF & NEON', 'NEON')))
+
+base <- ggplot(data = world) +
+     geom_sf() +
+     geom_point(data = sites, aes(x = lon, y = lat, col = mastSite), size = 2) +
+     geom_point(data = sites, aes(x = lon, y = lat), shape = 1.5, size = 2.5, colour = 'darkgrey') +
+     geom_label_repel(data = sites,
+        aes(x = lon, y = lat, label = Site.Name), 
+        size = 2.8, point.padding = 0.25, force = 2, segment.color = 'grey50')  +
+     scale_color_manual('Site type', values=c('#52854C', '#4E84C4')) +
+     coord_sf(xlim = c(-95.6, -68), ylim = c(24.9, 46.5)) +
+     theme(panel.grid.major = element_line(colour = gray(0.5), linetype = 'dashed', 
+         size = 0.5), panel.background = element_rect(fill = 'aliceblue'), 
+         panel.border = element_rect(fill = NA), 
+         legend.justification = c(1, 0.05), 
+         legend.position = c(1, 0.05),
+         legend.background = element_rect(fill = alpha('white', 0.9))) + xlab('') + ylab('')
+
+mplotGRSM <- c('GRSM_013', 'GRSM_070', 'GRSM_014', 'GRSM_069', 'GRSM_071', 'GRSM_003', 'GRSM_015')
+tplotGRSM <- c('GRSM_006', 'GRSM_004', 'GRSM_010', 'GRSM_009', 'GRSM_005', 'GRSM_003', 'GRSM_015')
+pplotGRSM <- c('GRSM_013', 'GRSM_004', 'GRSM_014', 'GRSM_008', 'GRSM_011', 'GRSM_003', 'GRSM_015')
+
+pairsGRSM <- data.frame(mplotGRSM, tplotGRSM, pplotGRSM)
+colnames(pairsGRSM) <- c('mammal', 'tick', 'plant')
+
+pairsGRSM <- pairsGRSM %>%
+   mutate(mammalTick = paste(mammal, tick, sep = '_'), plantMammal = paste(plant, mammal, sep = '_'))
+
+tickPlotsGRSM <- read.csv(paste0(tapath, 'tick.csv')) %>%
+  select(plotID, lat, lon) %>%
+  filter(plotID %in% pairsGRSM$tick) %>%
+  distinct() %>%
+  mutate(type = 'Tick abundance')
+
+mammalPlotsGRSM <- read.csv(paste0(mapath, 'mammal.csv')) %>%
+  select(plotID, lat, lon) %>%
+  filter(plotID %in% pairsGRSM$mammal) %>%
+  distinct() %>%
+  mutate(type = 'Small mammal abundance')
+
+plantPlotsGRSM <- read.csv(paste0(ppath, 'allPlots.csv')) %>%
+  rename(lat = latitude, lon = longitude) %>%
+  select(plotID, lat, lon) %>%
+  filter(plotID %in% pairsGRSM$plant) %>%
+  group_by(plotID) %>%
+  summarise(lat = mean(lat), lon = mean(lon)) %>%
+  mutate(type = 'Plant abundance')
+
+dfGRSM <- data.frame(bind_rows(plantPlotsGRSM, mammalPlotsGRSM, tickPlotsGRSM))
+
+mammalTickPlotsGRSM <- bind_rows(mammalPlotsGRSM, tickPlotsGRSM) %>%
+  distinct() %>%
+  left_join(pairsGRSM, by = c('plotID' = 'mammal')) %>%
+  select(plotID, lat, lon, mammalTick) %>%
+  left_join(pairsGRSM, by = c('plotID' = 'tick')) %>%
+  mutate(mammalTick = coalesce(mammalTick.x, mammalTick.y)) %>%
+  select(plotID, lat, lon, mammalTick)
+
+plantMammalPlotsGRSM <- bind_rows(plantPlotsGRSM, mammalPlotsGRSM) %>%
+  distinct() %>%
+  left_join(pairsGRSM, by = c('plotID' = 'plant')) %>%
+  select(plotID, lat, lon, plantMammal) %>%
+  left_join(pairsGRSM, by = c('plotID' = 'mammal')) %>%
+  mutate(plantMammal = coalesce(plantMammal.x, plantMammal.y)) %>%
+  select(plotID, lat, lon, plantMammal)
+
+GRSM <- qmap(c(lon = -83.47, lat = 35.68), zoom = 12, source = "stamen", maptype = "terrain") +
+  geom_point(data = dfGRSM, aes(x = lon, y = lat, col = type), size = 3.5, alpha = 0.9) +
+  geom_line(data = mammalTickPlotsGRSM, aes(x = lon, y = lat, group = mammalTick), col = '#525252') +
+  geom_line(data = plantMammalPlotsGRSM, aes(x = lon, y = lat, group = plantMammal), col = '#525252') +
+  scale_color_manual('Plot type', values=c('#225ea8', '#cc4c02', '#004529')) +
+  theme_void() +
+  theme(panel.grid.major = element_line(colour = gray(0.5), linetype = 'dashed', 
+         size = 0.5), panel.background = element_rect(fill = 'aliceblue'), 
+         panel.border = element_rect(fill = NA), 
+         legend.position = 'none') + xlab('') + ylab('')
+
+mplotDSNY <- c('DSNY_001', 'DSNY_005', 'DSNY_006', 'DSNY_036', 'DSNY_016', 'DSNY_009', 'DSNY_004')
+tplotDSNY <- c('DSNY_001', 'DSNY_005', 'DSNY_006', 'DSNY_021', 'DSNY_008', 'DSNY_014', 'DSNY_004')
+
+pairsDSNY <- data.frame(mplotDSNY, tplotDSNY)
+colnames(pairsDSNY) <- c('mammal', 'tick')
+
+pairsDSNY <- pairsDSNY %>% mutate(mammalTick = paste(mammal, tick, sep = '_'))
+
+tickPlotsDSNY <- read.csv(paste0(tapath, 'tick.csv')) %>%
+  select(plotID, lat, lon) %>%
+  filter(plotID %in% pairsDSNY$tick) %>%
+  distinct() %>%
+  mutate(type = 'Tick abundance')
+
+mammalPlotsDSNY <- read.csv(paste0(mapath, 'mammal.csv')) %>%
+  select(plotID, lat, lon) %>%
+  filter(plotID %in% pairsDSNY$mammal) %>%
+  distinct() %>%
+  mutate(type = 'Small mammal abundance')
+
+dfDSNY <- data.frame(bind_rows(mammalPlotsDSNY, tickPlotsDSNY))
+
+mammalTickPlotsDSNY <- bind_rows(mammalPlotsDSNY, tickPlotsDSNY) %>%
+  distinct() %>%
+  left_join(pairsDSNY, by = c('plotID' = 'mammal')) %>%
+  select(plotID, lat, lon, mammalTick) %>%
+  left_join(pairsDSNY, by = c('plotID' = 'tick')) %>%
+  mutate(mammalTick = coalesce(mammalTick.x, mammalTick.y)) %>%
+  select(plotID, lat, lon, mammalTick)
+
+DSNY <- qmap(c(lon = -81.37, lat = 28.1), zoom = 12, source = "stamen", maptype = "terrain") +
+  geom_point(data = dfDSNY, aes(x = lon, y = lat, col = type), size = 3.5, alpha = 0.9) +
+  geom_line(data = mammalTickPlotsDSNY, aes(x = lon, y = lat, group = mammalTick), col = '#525252') +
+  scale_color_manual('Plot type', values=c('#225ea8', '#cc4c02')) +
+  theme_void() +
+  theme(panel.grid.major = element_line(colour = gray(0.5), linetype = 'dashed', 
+         size = 0.5), panel.background = element_rect(fill = 'aliceblue'), 
+         panel.border = element_rect(fill = NA), 
+         legend.position = 'none') + xlab('') + ylab('')
+
+ggdraw(xlim = c(0, 20), ylim = c(0, 20)) +
+    draw_plot(base, x = 0, y = 0, width = 15, height = 20) +
+    draw_plot(GRSM, x = 15, y = 11.25, width = 5, height = 8) +
+    draw_plot(DSNY, x = 15, y = 2.5, width = 5, height = 8)
+```
+
 ```{r site map}
 mySites <- c('BART', 'BLAN', 'DSNY', 'GRSM', 'HARV', 'JERC', 'KONZ', 'ORNL', 'OSBS', 'SCBI', 'SERC', 'UKFS')
 mastSites <- c('BART', 'BLAN','GRSM', 'HARV', 'SCBI', 'SERC')
@@ -100,7 +243,7 @@ siteMap <- USAMap +
   xlab('') +
   ylab('')
 
-ggsave(file = paste0(ipath, 'siteMap.png'), siteMap, device = NULL)
+#ggsave(file = paste0(ipath, 'siteMap.png'), siteMap, device = NULL)
 ```
 
 ```{r example plots}
@@ -151,7 +294,7 @@ plantMammalPlots <- bind_rows(plantPlots, mammalPlots) %>%
   left_join(pairs, by = c('plotID' = 'mammal')) %>%
   mutate(plantMammal = coalesce(plantMammal.x, plantMammal.y)) %>%
   select(plotID, lat, lon, plantMammal)
-  
+
 
 loc <- c(lon = -83.47, lat = 35.68)
 GRSMMap <- ggmap(get_map(loc, maptype = 'terrain', color = 'bw', zoom = 12, crop = FALSE, scale = 2, size = c(640, 360)))
@@ -171,7 +314,7 @@ plotMap <- GRSMMap +
   xlab('') +
   ylab('')
 
-ggsave(file = paste0(ipath, 'plotMap.png'), plotMap, device = NULL)
+#ggsave(file = paste0(ipath, 'plotMap.png'), plotMap, device = NULL)
 ```
 
 ```{r plant-mammal lag model}
@@ -226,50 +369,35 @@ cred <- pmHostT %>%
   bind_rows(pmHostT1) %>%
   mutate(bottom = if_else(CI_025 < 0, -1, 1), top = if_else(CI_975 < 0, -1, 1)) %>%
   mutate(sig = bottom + top) %>%
-  mutate(significance = as.factor(case_when(sig == -2 ~ 'negative relationship',
-                                  sig == 0 ~ 'non-significant',
-                                  sig == 2 ~ 'positive relationship'))) %>%
+  mutate(Relationship = as.factor(case_when(sig == -2 ~ 'Negative',
+                                  sig == 0 ~ 'Non-significant',
+                                  sig == 2 ~ 'Positive'))) %>%
   select(-sig, -bottom, -top) %>%
   mutate(predictor = factor(predictor)) 
 
-
-cred$pred <- factor(cred$predictor, labels = c( `Acer` = expression(paste('Maple ', italic('(Acer)'))),
-                                   `Betula` = expression(paste('Birch ', italic('(Betula)'))),
-                                   `Carya` = expression(paste('Hickory ', italic('(Carya)'))),
-                                   `Cornus` = expression(paste('Dogwood ', italic('(Cornus)'))),
-                                   `Fagus` = expression(paste('Beech ', italic('(Fagus)'))),
-                                   `Fraxinus` = expression(paste('Ash ', italic('(Fraxinus)'))),
-                                   `Ilex` = expression(paste('Holly ', italic('(Ilex)'))),
-                                   `Liquidambar` = expression(paste('Sweet gum ', italic('(Liquidambar)'))),
-                                   `Nyssa` = expression(paste('Black gum ', italic('(Nyssa)'))),
-                                   `Picea` = expression(paste('Spruce ', italic('(Picea)'))),
-                                   `Pinus` = expression(paste('Pine ', italic('(Pinus)'))),
-                                   `Quercus` = expression(paste('Oak ', italic('(Quercus)'))),
-                                   `Tsuga` = expression(paste('Hemlock ', italic('(Tsuga)')))))
-
 cred$labs <- factor(cred$species, labels = c(
-           `BLBR` = expression(atop('Northern short-tailed shrew', italic('(Blarina brevicauda)'))), 
-           `PELE` = expression(atop('White-footed mouse', italic('(Peromyscus leucopus)'))), 
-           `PEMA` = expression(atop('Deer mouse', italic('(Peromyscus maniculatus)'))), 
-           `SOCI` = expression(atop('Common shrew', italic('(Sorex cinereus)'))), 
-           `TAST` = expression(atop('Eastern chipmunk', italic('(Tamias striatus)')))))
+           `BLBR` = expression(italic('Blarina brevicauda')),
+           `PELE` = expression(italic('Peromyscus leucopus')),
+           `PEMA` = expression(italic('Peromyscus maniculatus')), 
+           `SOCI` = expression(italic('Sorex cinereus')), 
+           `TAST` = expression(italic('Tamias striatus'))))
 
-pmGenera <- ggplot(cred, aes(x = pred, y = Estimate, col = significance)) + 
+pmGenera <- ggplot(cred, aes(x = predictor, y = Estimate, col = Relationship)) + 
   geom_point() +
   facet_grid(vars(labs), labeller = label_parsed) +
-  geom_errorbar(aes(ymin = CI_025, ymax = CI_975), width = 0.1) +
+  geom_errorbar(aes(ymin = CI_025, ymax = CI_975), width = 0.2) +
   scale_color_manual(values=c("#E69F00", "#999999", "#56B4E9")) +
-  scale_y_continuous(breaks = seq(-2, 2, 2), limits = c(-4, 4)) +
+  scale_y_continuous(name = 'Coefficient estimate') +
   xlab('') +
   theme_minimal() +
   scale_x_discrete(labels = function(l) parse(text = l)) +
   theme(legend.position = 'bottom', 
-        axis.text.x = element_text(angle = 45, hjust = 1, size = 12),
+        axis.text.x = element_text(face = 'italic', angle = 45, hjust = 1, size = 12),
         panel.spacing.y = unit(0.2, 'lines'),
         strip.text.y = element_text(angle = 0),
         text = element_text(size = 13))
 
-ggsave(file = paste0(ipath, 'pmGenera.png'), pmGenera, device = NULL, width = 7.5, height = 7.5)
+ggsave(file = paste0(ipath, 'pmGenera.png'), pmGenera, device = NULL, width = 10, height = 7.5)
 ```
 
 ```{r mammal-tick lag model}
@@ -311,9 +439,9 @@ ggsave(file = paste0(ipath, 'mtLag.png'), mtLag, device = NULL, width = 7.5, hei
 ```
 
 ```{r mammal-tick species model with reduced species from host genera}
-load(paste0(rpath, 'mtHostOutput.rdata'))
+load(paste0(rpath, 'mtHostOutput2.rdata'))
 
-cred <- mtHostOutput$parameters$betaStandXWTable %>%
+cred <- mtHostOutput2$parameters$betaStandXWTable %>%
   rownames_to_column %>%
   separate(rowname, c('tick','predictor'), sep = '_') %>%
   mutate(tick = factor(tick, levels = c('larvaCount', 'nymphCount', 'adultCount'))) %>%
@@ -321,41 +449,47 @@ cred <- mtHostOutput$parameters$betaStandXWTable %>%
   select(-predictor) %>%
   mutate(bottom = if_else(CI_025 < 0, -1, 1), top = if_else(CI_975 < 0, -1, 1)) %>%
   mutate(sig = bottom + top) %>%
-  mutate(significance = as.factor(case_when(sig == -2 ~ 'negative relationship',
-                                  sig == 0 ~ 'non-significant',
-                                  sig == 2 ~ 'positive relationship'))) %>%
+  mutate(Relationship = as.factor(case_when(sig == -2 ~ 'Negative relationship',
+                                  sig == 0 ~ 'Non-significant',
+                                  sig == 2 ~ 'Positive relationship'))) %>%
   select(-sig, -bottom, -top) 
 
+#cred$pred <- factor(cred$species, labels = c(
+          # `BLBR` = expression(atop('Northern short-tailed shrew', italic('(Blarina brevicauda)'))),
+          # `PELE` = expression(atop('White-footed mouse', italic('(Peromyscus leucopus)'))),
+          # `PEMA` = expression(atop('Deer mouse', italic('(Peromyscus maniculatus)'))), 
+           #`SOCI` = expression(atop('Common shrew', italic('(Sorex cinereus)'))), 
+           #`TAST` = expression(atop('Eastern chipmunk', italic('(Tamias striatus)')))))
+
 cred$pred <- factor(cred$species, labels = c(
-           `BLBR` = expression(atop('Northern short-tailed shrew', italic('(Blarina brevicauda)'))), 
-           `BLCA` = expression(atop('Southern short-tailed shrew', italic('(Blarina carolinensis)'))),
-           `BLHY` = expression(atop("Elliot's short-tailed shrew", italic('(Blarina hylophaga)'))),
-           `PELE` = expression(atop('White-footed mouse', italic('(Peromyscus leucopus)'))),
-           `PEMA` = expression(atop('Deer mouse', italic('(Peromyscus maniculatus)'))), 
-           `PEME` = expression(atop('Mesquite mouse', italic('(Peromyscus merriami)'))),
-           `SOCI` = expression(atop('Common shrew', italic('(Sorex cinereus)'))), 
-           `TAST` = expression(atop('Eastern chipmunk', italic('(Tamias striatus)')))))
+           `BLBR` = expression(italic('Blarina brevicauda')),
+           `PELE` = expression(italic('Peromyscus leucopus')),
+           `PEMA` = expression(italic('Peromyscus maniculatus')), 
+           `SOCI` = expression(italic('Sorex cinereus')), 
+           `TAST` = expression(italic('Tamias striatus'))))
 
-tickLab <- c(`adultCount` = 'adult stage',
-             `larvaCount` = 'larva stage',
-             `nymphCount` = 'nymph stage')
+tickLab <- c(`adultCount` = 'Adult stage',
+             `larvaCount` = 'Larva stage',
+             `nymphCount` = 'Nymph stage')
 
-mtSpecies <- ggplot(cred, aes(x = pred, y = Estimate, col = significance)) + 
+mtSpecies <- ggplot(cred, aes(x = pred, y = Estimate, col = Relationship)) + 
   geom_point() +
   facet_grid(vars(tick), labeller = labeller(tick = tickLab)) +
   geom_errorbar(aes(ymin = CI_025, ymax = CI_975), width = 0.1) +
-  scale_color_manual(values=c("#E69F00", "#999999", "#56B4E9")) +
+  scale_color_manual(values=c("#999999")) +
   scale_x_discrete(labels = function(l) parse(text = l)) +
   scale_y_continuous(breaks = seq(-0.5, 0.5, 0.5), limits = c(-0.65, 0.65)) +
   xlab('') +
+  ylab('Coefficient estimate') +
+  coord_fixed(ratio = 1) +
   theme_minimal() +
   theme(legend.position = 'bottom', 
-        axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+        axis.text.x = element_text(angle = 30, hjust = 1, size = 10),
         panel.spacing.y = unit(2, 'lines'),
         strip.text.y = element_text(angle = 0),
         text = element_text(size = 15))
 
-ggsave(file = paste0(ipath, 'mtSpecies.png'), mtSpecies, device = NULL, width = 9, height = 7.5)
+ggsave(file = paste0(ipath, 'mtSpecies.png'), mtSpecies, device = NULL, width = 10, height = 7.5)
 ```
 
 ```{r phylogeny}
@@ -386,7 +520,8 @@ plant <- nutrition %>%
   mutate(year = ymd(paste0(year, '-01-01'))) %>%
   mutate(grams = mast*gmPerSeed) %>%
   filter(grams < 100000) %>%
-  group_by(siteID) %>%
+  filter(siteID == 'HARV') %>%
+  group_by(genus) %>%
   mutate(abundance = (grams-min(grams))/(max(grams)-min(grams)))
   
 
@@ -394,7 +529,7 @@ mammal <- read.csv(paste0(mapath, 'mammal.csv')) %>%
     select(collectDate, siteID, total, totalTraps) %>%
     mutate(collectDate = ymd(collectDate)) %>%
     mutate(tmp = total/totalTraps) %>%
-    group_by(siteID) %>%
+    filter(siteID == 'HARV') %>%
     mutate(abundance = (tmp-min(tmp))/(max(tmp)-min(tmp))) %>%
     select(collectDate, siteID, total, totalTraps, abundance)
 
@@ -402,31 +537,60 @@ tick <- read.csv(paste0(tapath, 'tick.csv')) %>%
     select(collectDate, siteID, totalCount, totalSampledArea) %>%
     mutate(collectDate = ymd(collectDate)) %>%
     mutate(tmp = totalCount/totalSampledArea) %>%
-    group_by(siteID) %>%
+    filter(siteID == 'HARV') %>%
+    filter(totalCount < 2000) %>%
     mutate(abundance = (tmp-min(tmp))/(max(tmp)-min(tmp))) %>%
     select(collectDate, siteID, totalCount, totalSampledArea, abundance)
 
-
-ggplot(data = NULL) +
-      geom_point(data = plant, aes(x = year, y = abundance, colour = 'mast'), alpha = 0.3) +
-      geom_point(data = mammal, aes(x = collectDate, y = abundance, colour = 'mammal'), alpha = 0.3) +
-      geom_point(data = tick, aes(x = collectDate, y = abundance, colour = 'tick'), alpha = 0.3) +
-      facet_wrap(vars(siteID), ncol = 3) +
-      geom_line(data = plant, aes(x = year, y = abundance, colour = 'mast'), stat = 'smooth', method = 'loess', alpha = 0.9) +
-      geom_line(data = mammal, aes(x = collectDate, y = abundance, colour = 'mammal'), stat="smooth", method = "loess", alpha = 0.9) +
-      geom_line(data = tick, aes(x = collectDate, y = abundance, colour = 'tick'), 
-                stat="smooth",method = "loess", alpha = 0.9) +
-      scale_y_continuous(limits = c(0, 1)) +
-      xlab('Collection date') +
-      ylab('Relative abundance') +
-      scale_colour_manual(name = '', values = c(mast = '#004529', mammal = '#225ea8', tick = '#cc4c02')) +
+m <- ggplot(data = NULL) +
+      geom_point(data = mammal, aes(x = collectDate, y = abundance), colour = '#225ea8', alpha = 0.3) +
+      geom_line(data = mammal, aes(x = collectDate, y = abundance), colour = '#225ea8', stat="smooth", method = "loess", alpha = 0.9) +
+      scale_y_continuous(breaks = seq(0, 1, 1), limits = c(0, 1)) +
+      xlab('') +
+      ylab('mammal abundance') +
       theme_minimal() +
-      theme(legend.position = 'bottom')
+      theme(axis.title.x=element_blank(),
+            axis.text.x=element_blank(),
+            axis.ticks.x=element_blank())
 
-ggplot(data = NULL) +
-      geom_point(data = plant, aes(x = year, y = abundance, colour = 'mast'), alpha = 0.3) +
-      facet_wrap(vars(siteID), ncol = 3) +
-      geom_line(data = plant, aes(x = year, y = abundance, colour = 'mast'), stat = 'smooth', method = 'loess', alpha = 0.9)
+t <- ggplot(data = NULL) +
+      geom_point(data = tick, aes(x = collectDate, y = abundance), colour = '#cc4c02', alpha = 0.3) +
+      geom_line(data = tick, aes(x = collectDate, y = abundance),  colour = '#cc4c02',
+                stat="smooth",method = "loess", alpha = 0.9) +
+      scale_y_continuous(breaks = seq(0, 1, 1), limits = c(0, 1)) +
+      xlab('') +
+      ylab('tick abundance') +
+      theme_minimal() +
+      theme(axis.title.x=element_blank(),
+            axis.text.x=element_blank(),
+            axis.ticks.x=element_blank())
+
+labelInfo <-
+  split(plant, plant$genus) %>%
+  lapply(function(plant){
+    data.frame(
+      predAtMax = loess(abundance ~ as.numeric(year), data = plant) %>%
+        predict(newdata = data.frame(year = max(plant$year)))
+      , max = max(plant$year)
+    )}) %>%
+  bind_rows
+labelInfo$label = levels(factor(plant$genus))
+
+p <- ggplot(data = NULL) +
+      geom_point(data = plant, aes(x = year, y = abundance, colour = genus), alpha = 0.3) +
+      geom_line(data = plant, aes(x = year, y = abundance, colour = genus), stat = 'smooth', method = 'loess', alpha = 0.9) +
+      geom_label_repel(data = labelInfo, aes(x = max, y = predAtMax, label = label, color = label), nudge_x = 5) +
+      scale_color_viridis_d() +
+      scale_y_continuous(breaks = seq(0, 1, 1), limits = c(0, 1.1)) +
+      xlab('year') +
+      ylab('mast abundance') +
+      theme_minimal() +
+      theme(legend.position = 'none')
+
+
+
+harv <- plot_grid(t, m, p, align = "v", nrow = 3, rel_heights = c(1/4, 1/4, 1/2))
+ggsave(file = paste0(ipath, 'harv.png'), harv, device = NULL, width = 13.33, height = 7.5)
 ```
 
 ```{r concluding lag} 
@@ -501,4 +665,225 @@ tickAnticipate <- ggplot(data = df) +
 
 lag <- grid.arrange(tickReact, tickAnticipate, mammalReact, mammalAnticipate, mastReact, mastAnticipate, layout_matrix = rbind(c(1, 2), c(3, 4), c(5, 6)))
 ggsave(file = paste0(ipath, 'lag.png'), lag, device = NULL, width = 7.5, height = 7.5)
+```
+
+```{r mammal exploration}
+mammal <- read.csv(paste0(mapath, 'mammal.csv')) %>%
+  select(collectDate, siteID, totalTraps, BLBR, PELE, PEMA, SOCI, TAST) %>%
+  mutate(collectDate = ymd(collectDate)) %>%
+  group_by(siteID) %>%
+  mutate_at(vars(BLBR:TAST), funs(./totalTraps)) %>%
+  gather(BLBR:TAST, key = 'species', value = 'abundance')
+
+mammal <- read.csv(paste0(mapath, 'mammal.csv')) %>%
+  mutate(collectDate = ymd(collectDate)) %>%
+  group_by(siteID) %>%
+  mutate(tmp = total/totalTraps) %>%
+  mutate(abundance = (tmp-min(tmp))/(max(tmp)-min(tmp))) %>%
+  select(collectDate, siteID, abundance)
+
+
+m <- ggplot(mammal) +
+  geom_point(aes(collectDate, abundance), alpha = 0.1) +
+  geom_line(aes(collectDate, abundance), stat = 'smooth', method = 'loess', alpha = 0.9) +
+  facet_wrap(vars(siteID))
+```
+
+```{r tick exploration}
+tick <- read.csv(paste0(tapath, 'tick.csv')) %>%
+    select(collectDate, siteID, totalCount, totalSampledArea) %>%
+    mutate(collectDate = ymd(collectDate)) %>%
+    mutate(tmp = totalCount/totalSampledArea) %>%
+    filter(totalCount < 2000) %>%
+    group_by(siteID) %>%
+    mutate(abundance = (tmp-min(tmp))/(max(tmp)-min(tmp))) %>%
+    select(collectDate, siteID, totalCount, totalSampledArea, abundance)
+
+t <- ggplot(tick) +
+  geom_point(aes(collectDate, abundance), alpha = 0.5) +
+  geom_line(aes(collectDate, abundance), stat = 'smooth', method = 'loess', alpha = 0.9) +
+  facet_wrap(vars(siteID))
+
+```
+
+```{r data viz}
+mammal <- read.csv(paste0(mapath, 'mammal.csv')) %>%
+  mutate(collectDate = ymd(collectDate)) %>%
+  group_by(siteID) %>%
+  mutate(tmp = total/totalTraps) %>%
+  mutate(abundance = (tmp-min(tmp))/(max(tmp)-min(tmp))) %>%
+  select(collectDate, siteID, abundance)
+
+tick <- read.csv(paste0(tapath, 'tick.csv')) %>%
+  select(collectDate, siteID, totalCount, totalSampledArea) %>%
+  mutate(collectDate = ymd(collectDate)) %>%
+  mutate(tmp = totalCount/totalSampledArea) %>%
+  filter(totalCount < 2000) %>%
+  group_by(siteID) %>%
+  mutate(abundance = (tmp-min(tmp))/(max(tmp)-min(tmp)))
+
+t <- ggplot() +
+  geom_point(data = tick, aes(collectDate, abundance, colour = 'Tick'), alpha = 0.5, show.legend = TRUE) +
+  geom_line(data = tick, aes(collectDate, abundance), stat = 'smooth', method = 'loess', alpha = 0.9, col = "#C4961A") +
+  geom_point(data = mammal, aes(collectDate, abundance, colour = 'Mammal'), alpha = 0.5, show.legend = TRUE) +
+  geom_line(data = mammal, aes(collectDate, abundance), stat = 'smooth', method = 'loess', alpha = 0.9, col = '#293352') +
+  facet_wrap(vars(siteID)) +
+  ylab('Relative abundance') +
+  xlab('Year') +
+  scale_colour_manual(name = 'Sampling',
+    values = c(Tick ="#FFDB6D", Mammal = '#4E84C4')) +
+  theme_light() +
+  theme(legend.position = 'bottom')
+
+mast <- read.csv(paste0(spath, 'mast.csv')) %>%
+  rename(code = species)
+nutrition <- read.csv(paste0(spath, 'nutrition.csv'))
+
+plant <- mast %>%
+  filter(year > 2011, year < 2019, genus != 'Tilia') %>%
+  left_join(nutrition, by = c('code', 'genus')) %>%
+  select(-species) %>%
+  mutate(grams = mast * gmPerSeed)
+
+palette <- colorRampPalette(brewer.pal(8, 'Dark2'))
+count <- length(unique(plant$genus))
+
+p <- ggplot(plant) +
+  geom_point(aes(year, grams, col = genus, group = individualID), alpha = 0.7) +
+  geom_line(aes(year, grams, col = genus, group = individualID), alpha = 0.1) +
+  facet_wrap(vars(siteID), scales = 'free_y') +
+  xlab('Year') +
+  ylab('Mass of mast density (g)') +
+  scale_color_manual(values = palette(count)) +
+  theme_light() +
+  theme()
+
+dataviz <- grid.arrange(p, t, ncol = 1)
+```
+
+```{r mast exploration}
+mast <- read.csv(paste0(spath, 'mast.csv')) %>%
+  rename(code = species)
+nutrition <- read.csv(paste0(spath, 'nutrition.csv'))
+
+mplotBART <- c('BART_062', 'BART_012', 'BART_007', 'BART_084', 'BART_001', 'BART_015')
+pplotBART <- c('BART_028', 'BART_012', 'BART_007', 'BART_011', 'BART_001', 'BART_015') #needs new plots
+pplotBART <- c('BART_026', 'BART_012', 'BART_016', 'BART_011', 'BART_028', 'BART_002')
+siteBART <- 'BART'
+
+mplotBLAN <- c('BLAN_002', 'BLAN_001', 'BLAN_009', 'BLAN_003')
+pplotBLAN <- c('BLAN_011', 'BLAN_001', 'BLAN_009', 'BLAN_018')
+siteBLAN <- 'BLAN'
+
+mplotGRSM <- c('GRSM_013', 'GRSM_070', 'GRSM_014', 'GRSM_069', 'GRSM_071', 'GRSM_003', 'GRSM_015')
+pplotGRSM <- c('GRSM_013', 'GRSM_004', 'GRSM_014', 'GRSM_008', 'GRSM_011', 'GRSM_003', 'GRSM_015')
+siteGRSM <- 'GRSM'
+
+mplotHARV <- c('HARV_001', 'HARV_006', 'HARV_021', 'HARV_010', 'HARV_008', 'HARV_023', 'HARV_032')
+pplotHARV <- c('HARV_001', 'HARV_006', 'HARV_021', 'HARV_010', 'HARV_008', 'HARV_023', 'HARV_022')
+siteHARV <- 'HARV'
+
+mplotSCBI <- c('SCBI_039', 'SCBI_002', 'SCBI_035', 'SCBI_008', 'SCBI_004', 'SCBI_003')
+pplotSCBI <- c('SCBI_016', 'SCBI_002', 'SCBI_013', 'SCBI_008', 'SCBI_004', 'SCBI_003') #needs new plots
+pplotSCBI <- c('SCBI_016', 'SCBI_002', 'SCBI_014', 'SCBI_015', 'SCBI_004', 'SCBI_003')
+siteSCBI <- 'SCBI'
+
+mplotSERC <- c('SERC_008', 'SERC_007', 'SERC_014', 'SERC_015', 'SERC_011', 'SERC_031')
+pplotSERC <- c('SERC_001', 'SERC_017', 'SERC_014', 'SERC_002', 'SERC_011', 'SERC_003')
+siteSERC <- 'SERC'
+
+pairs <- data.frame(c(pplotBART, pplotBLAN, pplotGRSM, pplotHARV, pplotSCBI, pplotSERC), 
+                    c(mplotBART, mplotBLAN, mplotGRSM, mplotHARV, mplotSCBI, mplotSERC))
+colnames(pairs) <- c('plant', 'mammal')
+
+
+mplots <- levels(pairs$mammal)
+pplots <- levels(pairs$plant)
+
+plant <- nutrition %>%
+  left_join(mast, by = c('code', 'genus')) %>%
+  filter(year > 2012) %>%
+  mutate(year = ymd(paste0(year, '-01-01')), genus = as.factor(genus)) %>%
+  mutate(grams = mast*gmPerSeed) %>%
+  group_by(genus) %>%
+  mutate(abundance = (grams-min(grams))/(max(grams)-min(grams))) 
+
+plant <- mast %>%
+  filter(year > 2011, year < 2019, genus != 'Tilia') %>%
+  left_join(nutrition, by = c('code', 'genus')) %>%
+  select(-species) %>%
+  mutate(grams = mast * gmPerSeed) #%>%
+  #group_by(pair, year, genus) %>%
+  #summarise(grams = sum(grams))
+tmp <- plant %>% 
+  filter(plotID %in% pplots) %>%
+  group_by(plotID, siteID, year) %>%
+  summarise(mast = sum(grams)) 
+
+palette <- colorRampPalette(brewer.pal(8, 'Dark2'))
+count <- length(unique(plant$genus))
+
+p <- ggplot(plant) +
+  geom_point(aes(year, grams, col = genus, group = individualID), alpha = 0.7) +
+  geom_line(aes(year, grams, col = genus, group = individualID), alpha = 0.1) +
+  facet_wrap(vars(siteID), scales = 'free_y') +
+  xlab('Year') +
+  ylab('Mass of mast density (g)') +
+  scale_color_manual(values = palette(count)) +
+  theme_minimal() +
+  theme()
+
+p2 <- ggplot(plant) +
+  geom_violin(aes(as.factor(year), grams, col = genus), fill = palette(count)) +
+  facet_wrap(vars(siteID), scales = 'free_y') +
+  xlab('Year') +
+  ylab('Mass of mast density (g)') +
+  scale_colour_viridis_d() +
+  theme_minimal() +
+  theme()
+
+  
+```
+
+```{r plant-mammal lag model boxplots}
+reorder_within <- function(x, by, within, fun = median, sep = '_', ...) {
+  new_x <- paste(x, within, sep = sep)
+  stats::reorder(new_x, by, FUN = fun)
+}
+
+scale_x_reordered <- function(..., sep = '_') {
+  reg <- paste0(sep, '.+$')
+  ggplot2::scale_x_discrete(labels = function(x) gsub(reg, '', x), ...)
+}
+
+df <- data.frame(pmTotalLag2Output$chains$bFacGibbs) %>%
+  gather(species, chain) %>%
+  separate(species, c('species', 'time'), sep = '_') %>%
+  mutate(name = recode(species, 'BLBR' = 'Blarina brevicauda', 'PELE' = 'Peromyscus leucopus', 
+                       'PEMA' = 'Peromyscus maniculatus', 'SOCI' = 'Sorex cinereus', 'TAST' = 'Tamias striatus')) %>%
+  group_by(species, time) %>%
+  mutate(Relationship = if_else(median(chain) > 0, 'Positive', 'Negative'))
+
+df$labs <- factor(df$time, labels = c(
+           `t` = expression(paste('Time: ', italic('t'))), 
+           `t1` = expression(paste('Time: ', italic('t - 1')))))
+
+
+pmLag <- ggplot(df, aes(reorder_within(name, chain, time, median), chain, col = Relationship)) +
+  geom_boxplot(outlier.shape = NA, width = 0.2) +
+  scale_x_reordered() +
+  scale_y_continuous(name = 'Coefficient estimate') +
+  facet_grid(~labs, scales = 'free_x', labeller= label_parsed) +
+  scale_color_manual(values=c("#E69F00", "#56B4E9")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(face = 'italic', angle = 45, size = 12),
+        axis.line.x = element_blank(),
+        axis.title.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        strip.text.x = element_text(size = 14),
+        legend.position = 'bottom',
+        legend.justification = 'center') 
+
+
+ggsave(file = paste0(ipath, 'pmLag.png'), pmLag, device = NULL, width = 12, height = 7.5)
 ```

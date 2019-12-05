@@ -156,7 +156,7 @@ species <- do.call('rbind', lapply(files, read.csv, header = TRUE)) %>%
                                  `CACO15` = 'Carya', `CAGL8` = 'Carya', `CAOV3` = 'Carya', `CARYA` = 'Carya', `CATO6` = 'Carya', 
                                  `CEOC` = 'Celtis', `CEOR7` = 'Celastrus', `COFL2` = 'Cornus', `CRATA` = 'Crataegus', `ELUM` = 'Elaeagnus',
                                  `GIBI2` = 'Ginkgo', `GLTR` = 'Gleditsia', `JUNI` = 'Juglans', `JUVI` = 'Juniperus', `JUVIV` = 'Juniperus', 
-                                 `LIBE3` = 'Lindera', `LISI` = 'Ligustrum', `LITU` = 'Lriodendron', `LOJA` = 'Lonicera', `LOMA6` = 'Lonicera',
+                                 `LIBE3` = 'Lindera', `LISI` = 'Ligustrum', `LITU` = 'Liriodendron', `LOJA` = 'Lonicera', `LOMA6` = 'Lonicera',
                                  `MAPO` = 'Maclura', `MOAL` = 'Morus', `PAQU2` = 'Parthenocissus', `PLOC` = 'Platanus', `PRAV` = 'Prunus', 
                                  `PRSES` = 'Prunus', `QUAL` = 'Quercus', `QUMU` = 'Quercus', `QUVE` = 'Quercus', `RHDA` = 'Rhamnus', 
                                  `RHSC3` = 'Rhodotypos', `ROMU` = 'Rosa', `ROPS` = 'Robinia', `RUPH` = 'Rubus', `SASSA` = 'Sassafras',
@@ -268,7 +268,7 @@ cleanPlantData <- function(site){
   assign(site, do.call('rbind', lapply(files, read.csv, header = TRUE)))
   
   tmp <- get(site) %>%  
-    left_join(id, by = c('individualID', 'plotID')) %>%
+    left_join(id, by = c('individualID', 'plotID', 'siteID')) %>%
     mutate(code = recode_factor(taxonID, `2PLANT` = 'unknUNKN', `ABIES` = 'abieUNKN', `ACER` = 'acerUNKN', `ACPE` = 'acerPens',
                                  `ACRU` = 'acerRubr', `ACSA2` = 'acerSac2', `ACSA3` = 'acerSacc', `ACSAS` = 'acerSacc', `BEAL2` = 'betuAlle',
                                  `BECAC` = 'betuUNKN', `BELE` = 'betuLent', `BEPA` = 'betuPapy', `BEPAC2` = 'betuPapy', `BEPAP` = 'betuPapy',
@@ -336,7 +336,7 @@ cleanPlantData <- function(site){
                                  `CACO15` = 'Carya', `CAGL8` = 'Carya', `CAOV3` = 'Carya', `CARYA` = 'Carya', `CATO6` = 'Carya', 
                                  `CEOC` = 'Celtis', `CEOR7` = 'Celastrus', `COFL2` = 'Cornus', `CRATA` = 'Crataegus', `ELUM` = 'Elaeagnus',
                                  `GIBI2` = 'Ginkgo', `GLTR` = 'Gleditsia', `JUNI` = 'Juglans', `JUVI` = 'Juniperus', `JUVIV` = 'Juniperus', 
-                                 `LIBE3` = 'Lindera', `LISI` = 'Ligustrum', `LITU` = 'Lriodendron', `LOJA` = 'Lonicera', `LOMA6` = 'Lonicera',
+                                 `LIBE3` = 'Lindera', `LISI` = 'Ligustrum', `LITU` = 'Liriodendron', `LOJA` = 'Lonicera', `LOMA6` = 'Lonicera',
                                  `MAPO` = 'Maclura', `MOAL` = 'Morus', `PAQU2` = 'Parthenocissus', `PLOC` = 'Platanus', `PRAV` = 'Prunus', 
                                  `PRSES` = 'Prunus', `QUAL` = 'Quercus', `QUMU` = 'Quercus', `QUVE` = 'Quercus', `RHDA` = 'Rhamnus', 
                                  `RHSC3` = 'Rhodotypos', `ROMU` = 'Rosa', `ROPS` = 'Robinia', `RUPH` = 'Rubus', `SASSA` = 'Sassafras',
@@ -351,7 +351,7 @@ cleanPlantData <- function(site){
                                  `BICA` = 'Bignonia', `CACA18` = 'Carpinus', `CAFL22` = 'Calycanthus', `CASTA` = 'Castanea',
                                  `CLAC3` = 'Clethra', `CLADR` = 'Cladrastis', `GAUR` = 'Gaylussacia', `HALES` = 'Halesia', `ILOP` = 'Ilex',
                                  `JUGLA` = 'Juglans', `KALA` = 'Kalmia', `LIBEB` = 'Lindera', `LIST2` = 'Liquidambar', `MAFR` = 'Magnolia', 
-                                 `MAGNO` = 'Magnolia', `NYSY` = 'Nyssa', `OXYDE` = 'Oxydendron', `PHHI2` = 'Philadelphus', `PIPUS` = 'Pinus',
+                                 `MAGNO` = 'Magnolia', `NYSY` = 'Nyssa', `OXYDE` = 'Oxydendrum', `PHHI2` = 'Philadelphus', `PIPUS` = 'Pinus',
                                  `PIRI` = 'Pinus', `PIRU` = 'Pinus', `PITA` = 'Pinus', `PIVI2` = 'Pinus', `PRSE2` = 'Prunus', 
                                  `PYPU` = 'Pyrularia', `QUCO2` = 'Quercus', `QUMO4` = 'Quercus', `RHODO` = 'Rhododendron', 
                                  `SAAL5` = 'Sassafras', `SORBU` = 'Sorbus', `ULRU` = 'Ulmus', `VACCI` = 'Vaccinium', `VIAE` = 'Vitis', 
@@ -381,10 +381,11 @@ cleanPlantData <- function(site){
                                  `VIDE` = 'Viburnum', `AMCO2` = 'Ampelopsis', `COAM3` = 'Corylus', `EUATS` = 'Euonymus', `EUFO5` = 'Euonymus', 
                                  `GYDI` = 'Gymnocladus', `LIVU` = 'Ligustrum', `MORUS` = 'Morus', `PODE3` = 'Populus', `ROAR3` = 'Rosa',
                                  `EUAT5` = 'Euonymus', `DIVI5` = 'Diospyros', `PIPU5` = 'Pinus')) %>%
-    select(plotID, individualID, taxonID, code, genus, stemDiameter, measurementHeight, growthForm, plantStatus) %>%
-    group_by(plotID, individualID, taxonID, code, genus, growthForm, plantStatus) %>%
-    summarise(stemDiameter = mean(stemDiameter), measurementHeight = mean(measurementHeight)) %>%
-    na.omit()
+    select(plotID, individualID, taxonID, code, genus, stemDiameter, measurementHeight, plantStatus) %>%
+    mutate(plotID = as.factor(plotID), individualID = as.factor(individualID)) %>%
+    na.omit() %>%
+    group_by(individualID, taxonID, code, genus, plantStatus, plotID) %>%
+    summarise(stemDiameter = mean(stemDiameter), measurementHeight = mean(measurementHeight)) 
 
 # create df with necessary columns
   write.csv(tmp, file = paste0(pppath, '.csv'), row.names = FALSE)
@@ -454,7 +455,26 @@ SERC <- read.csv(paste0(pppath, 'SERC.csv')) %>%
   summarise(stemDiameter = mean(stemDiameter)) %>%
   select(individualID, plotID, siteID, code, genus, stemDiameter) 
 
-tree <- bind_rows(BART, BLAN, GRSM, HARV, SCBI, SERC)
+Mode <- function(x, na.rm = FALSE) {
+  if(na.rm){
+    x = x[!is.na(x)]
+  }
+
+  ux <- unique(x)
+  return(ux[which.max(tabulate(match(x, ux)))])
+}
+
+tree <- bind_rows(BART, BLAN, GRSM, HARV, SCBI, SERC) %>%
+  as.data.frame() %>%
+  separate(code, c('g', 's'), 4) %>%
+  mutate(s = as.factor(s), g = as.factor(g)) %>%
+  mutate(s = as.factor(ifelse(s == 'UNKN', factor(NA), as.character(s)))) %>%
+  group_by(genus) %>%
+  mutate(s = ifelse(is.na(s), as.character(Mode(s, na.rm = TRUE)), as.character(s))) %>%
+  unite('code', g:s, sep = '') %>%
+  mutate(code = recode_factor(code, `abieNA` = 'abieFras', `asimNA` = 'asimAila', `cratNA` = 'cratLaev', `oxydNA` = 'oxydArbo', `castNA` = 'castDent', `haleNA` = 
+                                'haleCaro',`diosNA` = 'diosVirg', `prenNA` = 'prenAlba', `pyruNA` = 'pyruPube', `piceAbie` = 'piceGlau'))
+
 write.csv(tree, file =  paste0(papath, 'tree.csv'), row.names = FALSE)
 ```
 
@@ -462,14 +482,41 @@ write.csv(tree, file =  paste0(papath, 'tree.csv'), row.names = FALSE)
 srpath <- '/Users/taylorminich/Documents/grad/mp/data/seeds/raw/'
 sppath <- '/Users/taylorminich/Documents/grad/mp/data/seeds/processed/'
 
-years <- 2013:2018
-sites <- c('BART', 'BLAN', 'GRSM', 'HARV', 'SCBI', 'SERC')
+genera <- c('abies', 'acer', 'ailanthus', 'amelanchier', 'asimina', 'betula', 'carpinus', 'carya', 'celtis', 'cercis', 'cornus', 'diospyros', 'fagus', 
+            'fraxinus', 'ilex', 'juglans', 'juniperus', 'lindera', 'liquidambar', 'liriodendron', 'magnolia', 'nyssa', 'ostrya', 'oxydendrum', 'paulownia', 
+            'picea', 'pinus', 'platanus', 'prunus', 'quercus', 'robinia', 'sassafras', 'sorbus', 'tilia', 'tsuga', 'ulmus')
 
-# acer
-### file to large to import###
+# abies ----
+load(paste0(srpath, 'abiesOutput.rdata'))
+
+abiesFec <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+abiesRep <- output$parameters$betaRep %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+abiesFormulaFec <- output$inputs$formulaFec
+abiesFormulaRep <- output$inputs$formulaRep
+
+abiesTreeData <- output$inputs$treeData
+
+remove(output)
+# acer ----
 load(paste0(srpath, 'acerOutput.rdata'))
 
-acer <- output$parameters$betaFec %>%
+acerFec <- output$parameters$betaFec %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
@@ -478,7 +525,7 @@ acer <- output$parameters$betaFec %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
 
-acer <- output$parameters$betaRep %>%
+acerRep <- output$parameters$betaRep %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
@@ -486,36 +533,94 @@ acer <- output$parameters$betaRep %>%
   mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
+
+acerFormulaFec <- output$inputs$formulaFec
+acerFormulaRep <- output$inputs$formulaRep
+
+acerTreeData <- output$inputs$treeData
 
 remove(output)
+# ailanthus ----
+load(paste0(srpath, 'ailanthusOutput.rdata'))
 
-# asimina
-#load(paste0(srpath, 'asiminaOutput.rdata'))
-
-asimina <- output$parameters$betaFec %>%
+ailanthusFec <- output$parameters$betaFec %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
-  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
   mutate(parameter = as.factor(parameter)) %>%
-  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  mutate(code = 'ailaAlti') %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
 
-asimina <- output$parameters$betaRep %>%
+ailanthusRep <- output$parameters$betaRep %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
-  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
   mutate(parameter = as.factor(parameter)) %>%
-  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  mutate(code = 'ailaAlti') %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
+
+ailanthusFormulaFec <- output$inputs$formulaFec
+ailanthusFormulaRep <- output$inputs$formulaRep
+
+ailanthusTreeData <- output$inputs$treeData
 
 remove(output)
+# amelanchier ----
+load(paste0(srpath, 'amelanchierOutput.rdata'))
 
-# betula
+amelanchierFec <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+amelanchierRep <- output$parameters$betaRep %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+amelanchierFormulaFec <- output$inputs$formulaFec
+amelanchierFormulaRep <- output$inputs$formulaRep
+
+amelanchierTreeData <- output$inputs$treeData
+
+remove(output)
+# asimina ----
+load(paste0(srpath, 'asiminaOutput.rdata'))
+
+asiminaFec <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'asimTril') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+asiminaRep <- output$parameters$betaRep %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'asimTril') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+asiminaFormulaFec <- output$inputs$formulaFec
+asiminaFormulaRep <- output$inputs$formulaRep
+
+asiminaTreeData <- output$inputs$treeData
+
+remove(output)
+# betula ----
 load(paste0(srpath, 'betulaOutput.rdata'))
 
-betula <- output$parameters$betaFec %>%
+betulaFec <- output$parameters$betaFec %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
@@ -524,7 +629,7 @@ betula <- output$parameters$betaFec %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
 
-betula <- output$parameters$betaRep %>%
+betulaRep <- output$parameters$betaRep %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
@@ -533,13 +638,41 @@ betula <- output$parameters$betaRep %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
 
+betulaFormulaFec <- output$inputs$formulaFec
+betulaFormulaRep <- output$inputs$formulaRep
+
+betulaTreeData <- output$inputs$treeData
 
 remove(output)
+# carpinus ----
+load(paste0(srpath, 'carpinusOutput.rdata'))
 
-# carya
+carpinusFec <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'carpCaro') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+carpinusRep <- output$parameters$betaRep %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'carpCaro') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+carpinusFormulaFec <- output$inputs$formulaFec
+carpinusFormulaRep <- output$inputs$formulaRep
+
+carpinusTreeData <- output$inputs$treeData
+
+remove(output)
+# carya ----
 load(paste0(srpath, 'caryaOutput.rdata'))
 
-carya <- output$parameters$betaFec %>%
+caryaFec <- output$parameters$betaFec %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
@@ -551,7 +684,7 @@ carya <- output$parameters$betaFec %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
 
-carya <- output$parameters$betaRep %>%
+caryaRep <- output$parameters$betaRep %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
@@ -562,13 +695,69 @@ carya <- output$parameters$betaRep %>%
   mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
+
+caryaFormulaFec <- output$inputs$formulaFec
+caryaFormulaRep <- output$inputs$formulaRep
+
+caryaTreeData <- output$inputs$treeData
 
 remove(output)
-  
-# cornus
+# celtis ----
+load(paste0(srpath, 'celtisOutput.rdata'))
+
+celtisFec <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+celtisRep <- output$parameters$betaRep %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+celtisFormulaFec <- output$inputs$formulaFec
+celtisFormulaRep <- output$inputs$formulaRep
+
+celtisTreeData <- output$inputs$treeData
+
+remove(output)
+# cercis ----
+load(paste0(srpath, 'cercisOutput.rdata'))
+
+cercisFec <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'cercCana') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+cercisRep <- output$parameters$betaRep %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'cercCana') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+cercisFormulaFec <- output$inputs$formulaFec
+cercisFormulaRep <- output$inputs$formulaRep
+
+cercisTreeData <- output$inputs$treeData
+
+remove(output)
+# cornus ----
 load(paste0(srpath, 'cornusOutput.rdata'))
 
-cornus <- output$parameters$betaFec %>%
+cornusFec <- output$parameters$betaFec %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
@@ -577,7 +766,7 @@ cornus <- output$parameters$betaFec %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
 
-cornus <- output$parameters$betaRep %>%
+cornusRep <- output$parameters$betaRep %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
@@ -585,13 +774,42 @@ cornus <- output$parameters$betaRep %>%
   mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
+
+cornusFormulaFec <- output$inputs$formulaFec
+cornusFormulaRep <- output$inputs$formulaRep
+
+cornusTreeData <- output$inputs$treeData
 
 remove(output)
+# diospyros ----
+load(paste0(srpath, 'diospyrosOutput.rdata'))
 
-# fagus
+diospyrosFec <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'faguGran') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+diospyrosRep <- output$parameters$betaRep %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'faguGran') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+diospyrosFormulaFec <- output$inputs$formulaFec
+diospyrosFormulaRep <- output$inputs$formulaRep
+
+diospyrosTreeData <- output$inputs$treeData
+
+remove(output)
+# fagus ----
 load(paste0(srpath, 'fagusOutput.rdata'))
 
-fagus <- output$parameters$betaFec %>%
+fagusFec <- output$parameters$betaFec %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(parameter = as.factor(parameter)) %>%
@@ -599,20 +817,24 @@ fagus <- output$parameters$betaFec %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
 
-fagus <- output$parameters$betaRep %>%
+fagusRep <- output$parameters$betaRep %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(parameter = as.factor(parameter)) %>%
   mutate(code = 'faguGran') %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
+
+fagusFormulaFec <- output$inputs$formulaFec
+fagusFormulaRep <- output$inputs$formulaRep
+
+fagusTreeData <- output$inputs$treeData
 
 remove(output)
-
-# fraxinus
+# fraxinus ----
 load(paste0(srpath, 'fraxinusOutput.rdata'))
 
-fraxinus <- output$parameters$betaFec %>%
+fraxinusFec <- output$parameters$betaFec %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
@@ -621,7 +843,7 @@ fraxinus <- output$parameters$betaFec %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
 
-fraxinus <- output$parameters$betaRep %>%
+fraxinusRep <- output$parameters$betaRep %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
@@ -629,13 +851,18 @@ fraxinus <- output$parameters$betaRep %>%
   mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
+
+fraxinusFormulaFec <- output$inputs$formulaFec
+fraxinusFormulaRep <- output$inputs$formulaRep
+
+fraxinusTreeData <- output$inputs$treeData
 
 remove(output)
 
-# ilex 
+# ilex ----
 load(paste0(srpath, 'ilexOutput.rdata'))
 
-ilex <- output$parameters$betaFec %>%
+ilexFec <- output$parameters$betaFec %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
@@ -644,7 +871,7 @@ ilex <- output$parameters$betaFec %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
 
-ilex <- output$parameters$betaRep %>%
+ilexRep <- output$parameters$betaRep %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
@@ -653,12 +880,16 @@ ilex <- output$parameters$betaRep %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
 
+ilexFormulaFec <- output$inputs$formulaFec
+ilexFormulaRep <- output$inputs$formulaRep
+
+ilexTreeData <- output$inputs$treeData
+
 remove(output)
+# juglans ----
+load(paste0(srpath, 'juglansOutput.rdata'))
 
-# lindera
-#load(paste0(srpath, 'linderaOutput.rdata'))
-
-lindera <- output$parameters$betaFec %>%
+juglansFec <- output$parameters$betaFec %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
@@ -667,33 +898,75 @@ lindera <- output$parameters$betaFec %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
 
-remove(output)
-
-# liriodendron
-load(paste0(srpath, 'liriodendronOutput.rdata'))
-
-liriodendron <- output$parameters$betaFec %>%
+juglansRep <- output$parameters$betaRep %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
   mutate(parameter = as.factor(parameter)) %>%
-  mutate(code = 'liriTuli') %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
 
-liriodendron <- output$parameters$betaRep %>%
+juglansFormulaFec <- output$inputs$formulaFec
+juglansFormulaRep <- output$inputs$formulaRep
+
+juglansTreeData <- output$inputs$treeData
+
+remove(output)
+# juniperus ----
+load(paste0(srpath, 'juniperusOutput.rdata'))
+
+juniperusFec <- output$parameters$betaFec %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(parameter = as.factor(parameter)) %>%
-  mutate(code = 'liriTuli') %>%
+  mutate(code = 'juniVirg') %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
 
-remove(output)
+juniperusRep <- output$parameters$betaRep %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'juniVirg') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
 
-# liquidambar
+juniperusFormulaFec <- output$inputs$formulaFec
+juniperusFormulaRep <- output$inputs$formulaRep
+
+juniperusTreeData <- output$inputs$treeData
+
+remove(output)
+# lindera ----
+load(paste0(srpath, 'linderaOutput.rdata'))
+
+linderaFec <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'lindBenz') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+linderaRep <- output$parameters$betaRep %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'lindBenz') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+linderaFormulaFec <- output$inputs$formulaFec
+linderaFormulaRep <- output$inputs$formulaRep
+
+linderaTreeData <- output$inputs$treeData
+
+remove(output)
+# liquidambar ----
 load(paste0(srpath, 'liquidambarOutput.rdata'))
 
-liquidambar <- output$parameters$betaFec %>%
+liquidambarFec <- output$parameters$betaFec %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(parameter = as.factor(parameter)) %>%
@@ -701,20 +974,76 @@ liquidambar <- output$parameters$betaFec %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
 
-liquidambar <- output$parameters$betaRep %>%
+liquidambarRep <- output$parameters$betaRep %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(parameter = as.factor(parameter)) %>%
   mutate(code = 'liquStyr') %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
+
+liquidambarFormulaFec <- output$inputs$formulaFec
+liquidambarFormulaRep <- output$inputs$formulaRep
+
+liquidambarTreeData <- output$inputs$treeData
 
 remove(output)
+# liriodendron ----
+load(paste0(srpath, 'liriodendronOutput.rdata'))
 
-# nyssa
+liriodendronFec <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'liriTuli') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+liriodendronRep <- output$parameters$betaRep %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'liriTuli') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+liriodendronFormulaFec <- output$inputs$formulaFec
+liriodendronFormulaRep <- output$inputs$formulaRep
+
+liriodendronTreeData <- output$inputs$treeData
+
+remove(output)
+# magnolia ----
+load(paste0(srpath, 'magnoliaOutput.rdata'))
+
+magnoliaFec <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+magnoliaRep <- output$parameters$betaRep %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+magnoliaFormulaFec <- output$inputs$formulaFec
+magnoliaFormulaRep <- output$inputs$formulaRep
+
+magnoliaTreeData <- output$inputs$treeData
+
+remove(output)
+# nyssa ----
 load(paste0(srpath, 'nyssaOutput.rdata'))
 
-nyssa <- output$parameters$betaFec %>%
+nyssaFec <- output$parameters$betaFec %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(parameter = as.factor(parameter)) %>%
@@ -722,20 +1051,49 @@ nyssa <- output$parameters$betaFec %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
 
-nyssa <- output$parameters$betaRep %>%
+nyssaRep <- output$parameters$betaRep %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(parameter = as.factor(parameter)) %>%
   mutate(code = 'nyssSylv') %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
+
+nyssaFormulaFec <- output$inputs$formulaFec
+nyssaFormulaRep <- output$inputs$formulaRep
+
+nyssaTreeData <- output$inputs$treeData
 
 remove(output)
+# ostrya ----
+load(paste0(srpath, 'ostryaOutput.rdata'))
 
-# oxydendrum
+ostryaFec <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'ostrVirg') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+ostryaRep <- output$parameters$betaRep %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'ostrVirg') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+ostryaFormulaFec <- output$inputs$formulaFec
+ostryaFormulaRep <- output$inputs$formulaRep
+
+ostryaTreeData <- output$inputs$treeData
+
+remove(output)
+# oxydendrum ----
 load(paste0(srpath, 'oxydendrumOutput.rdata'))
 
-oxydendrum <- output$parameters$betaFec %>%
+oxydendrumFec <- output$parameters$betaFec %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(parameter = as.factor(parameter)) %>%
@@ -743,20 +1101,49 @@ oxydendrum <- output$parameters$betaFec %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
 
-oxydendrum <- output$parameters$betaRep %>%
+oxydendrumRep <- output$parameters$betaRep %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(parameter = as.factor(parameter)) %>%
   mutate(code = 'oxydArbo') %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
+
+oxydendrumFormulaFec <- output$inputs$formulaFec
+oxydendrumFormulaRep <- output$inputs$formulaRep
+
+oxydendrumTreeData <- output$inputs$treeData
 
 remove(output)
+# paulownia ----
+load(paste0(srpath, 'paulowniaOutput.rdata'))
 
-# picea
+paulowniaFec <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'paulTome') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+paulowniaRep <- output$parameters$betaRep %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'paulTome') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+paulowniaFormulaFec <- output$inputs$formulaFec
+paulowniaFormulaRep <- output$inputs$formulaRep
+
+paulowniaTreeData <- output$inputs$treeData
+
+remove(output)
+# picea ----
 load(paste0(srpath, 'piceaOutput.rdata'))
 
-picea <- output$parameters$betaFec %>%
+piceaFec <- output$parameters$betaFec %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
@@ -765,7 +1152,7 @@ picea <- output$parameters$betaFec %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
 
-picea <- output$parameters$betaRep %>%
+piceaRep <- output$parameters$betaRep %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
@@ -773,13 +1160,17 @@ picea <- output$parameters$betaRep %>%
   mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
+
+piceaFormulaFec <- output$inputs$formulaFec
+piceaFormulaRep <- output$inputs$formulaRep
+
+piceaTreeData <- output$inputs$treeData
 
 remove(output)
-
-# pinus
+# pinus ----
 load(paste0(srpath, 'pinusOutput.rdata'))
 
-pinus <- output$parameters$betaFec %>%
+pinusFec <- output$parameters$betaFec %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
@@ -788,7 +1179,7 @@ pinus <- output$parameters$betaFec %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
 
-pinus <- output$parameters$betaRep %>%
+pinusRep <- output$parameters$betaRep %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
@@ -796,13 +1187,69 @@ pinus <- output$parameters$betaRep %>%
   mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
+
+piinusFormulaFec <- output$inputs$formulaFec
+pinusFormulaRep <- output$inputs$formulaRep
+
+pinusTreeData <- output$inputs$treeData
 
 remove(output)
+# platanus ----
+load(paste0(srpath, 'platanusOutput.rdata'))
 
-# quercus
+platanusFec <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'platOcci') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+platanusRep <- output$parameters$betaRep %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'platOcci') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+platanusFormulaFec <- output$inputs$formulaFec
+platanusFormulaRep <- output$inputs$formulaRep
+
+platanusTreeData <- output$inputs$treeData
+
+remove(output)
+# prunus ----
+load(paste0(srpath, 'prunusOutput.rdata'))
+
+prunusFec <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+prunusRep <- output$parameters$betaRep %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+prunusFormulaFec <- output$inputs$formulaFec
+prunusFormulaRep <- output$inputs$formulaRep
+
+prunusTreeData <- output$inputs$treeData
+
+remove(output)
+# quercus ----
 load(paste0(srpath, 'quercusOutput.rdata'))
 
-quercus <- output$parameters$betaFec %>%
+quercusFec <- output$parameters$betaFec %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
@@ -811,7 +1258,7 @@ quercus <- output$parameters$betaFec %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
 
-quercus <- output$parameters$betaRep %>%
+quercusRep <- output$parameters$betaRep %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
@@ -819,36 +1266,119 @@ quercus <- output$parameters$betaRep %>%
   mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
+
+quercusFormulaFec <- output$inputs$formulaFec
+quercusFormulaRep <- output$inputs$formulaRep
+
+quercusTreeData <- output$inputs$treeData
 
 remove(output)
+# robinia ----
+load(paste0(srpath, 'robiniaOutput.rdata'))
 
-# rhododendron
-#load(paste0(srpath, 'rhododendronOutput.rdata'))
-
-rhododendron <- output$parameters$betaFec %>%
+robiniaFec <- output$parameters$betaFec %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
-  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
   mutate(parameter = as.factor(parameter)) %>%
-  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  mutate(code = 'robiPseu') %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
 
-rhododenron <- output$parameters$betaRep %>%
+robiniaRep <- output$parameters$betaRep %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
-  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
   mutate(parameter = as.factor(parameter)) %>%
-  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  mutate(code = 'robiPseu') %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
+
+robiniaFormulaFec <- output$inputs$formulaFec
+robiniaFormulaRep <- output$inputs$formulaRep
+
+robiniaTreeData <- output$inputs$treeData
 
 remove(output)
+# sassafras ----
+load(paste0(srpath, 'sassafrasOutput.rdata'))
 
-# tsuga
+sassafrasFec <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'sassAlbi') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+sassafrasRep <- output$parameters$betaRep %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'sassAlbi') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+sassafrasFormulaFec <- output$inputs$formulaFec
+sassafrasFormulaRep <- output$inputs$formulaRep
+
+sassafrassTreeData <- output$inputs$treeData
+
+remove(output)
+# sorbus ----
+load(paste0(srpath, 'sorbusOutput.rdata'))
+
+sorbusFec <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'sorbAmer') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+sorbusRep <- output$parameters$betaRep %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(code = 'sorbAmer') %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+sorbusFormulaFec <- output$inputs$formulaFec
+sorbusFormulaRep <- output$inputs$formulaRep
+
+sorbusTreeData <- output$inputs$treeData
+
+remove(output)
+# tilia ----
+load(paste0(srpath, 'tiliaOutput.rdata'))
+
+tiliaFec <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+tiliaRep <- output$parameters$betaRep %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+tiliaFormulaFec <- output$inputs$formulaFec
+tiliaFormulaRep <- output$inputs$formulaRep
+
+tiliaTreeData <- output$inputs$treeData
+
+remove(output)
+# tsuga ----
 load(paste0(srpath, 'tsugaOutput.rdata'))
 
-tsuga <- output$parameters$betaFec %>%
+tsugaFec <- output$parameters$betaFec %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(parameter = as.factor(parameter)) %>%
@@ -856,45 +1386,109 @@ tsuga <- output$parameters$betaFec %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
 
-tsuga <- output$parameters$betaRep %>%
+tsugaRep <- output$parameters$betaRep %>%
   as.data.frame() %>%
   rownames_to_column(var = 'parameter') %>%
   mutate(parameter = as.factor(parameter)) %>%
   mutate(code = 'tsugCana') %>%
   select(code, parameter, estimate) %>%
   spread(key = parameter, value = estimate)
+
+tsugaFormulaFec <- output$inputs$formulaFec
+tsugaFormulaRep <- output$inputs$formulaRep
+
+tsugaTreeData <- output$inputs$treeData
 
 remove(output)
+# ulmus ----
+load(paste0(srpath, 'ulmusOutput.rdata'))
 
-fecParams <- bind_rows(acer, betula, carya, cornus, fagus, fraxinus, ilex, liquidambar, 
-                    liriodendron, nyssa, oxydendrum, picea, pinus, quercus, tsuga) %>%
-  rename(interceptFec = '(Intercept)', defAnomaly_beta = defAnomaly, defSiteWinterTminSite_beta = 'defSite:winterTminSite', 
-         defSite_beta = defSite, diam_betaFec = diam, diamSq_beta = 'I(diam^2)', 
-         winterTminSite_beta = winterTminSite)
+ulmusFec <- output$parameters$betaFec %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(species = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(species, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+ulmusRep <- output$parameters$betaRep %>%
+  as.data.frame() %>%
+  rownames_to_column(var = 'parameter') %>%
+  mutate(code = substr(parameter, 8, 15), parameter = substr(parameter, 17, nchar(parameter))) %>%
+  mutate(parameter = as.factor(parameter)) %>%
+  mutate(parameter = sub('^$', '(Intercept)', parameter)) %>%
+  select(code, parameter, estimate) %>%
+  spread(key = parameter, value = estimate)
+
+ulmusFormulaFec <- output$inputs$formulaFec
+ulmusFormulaRep <- output$inputs$formulaRep
+
+ulmusTreeData <- output$inputs$treeData
+
+remove(output)
+# combine params ----
+
+## fecundit
+fecParams <- bind_rows(abiesFec, acerFec, ailanthusFec, amelanchierFec, asiminaFec, betulaFec, carpinusFec, caryaFec, celtisFec, cercisFec, cornusFec, diospyrosFec, 
+                       fagusFec, fraxinusFec, ilexFec, juglansFec, juniperusFec, linderaFec, liquidambarFec, liriodendronFec, magnoliaFec, nyssaFec, ostryaFec, 
+                       oxydendrumFec, paulowniaFec, piceaFec, pinusFec, platanusFec, prunusFec, quercusFec, robiniaFec, sassafrasFec, sorbusFec, tiliaFec, tsugaFec, 
+                       ulmusFec) %>%
+  rename(interceptFec = '(Intercept)', diam_betaFec = diam, diamsurDefSite_beta = 'diam:surDefSite', diamSq_beta = 'I(diam^2)', 
+         shade_beta = 'shade', springTminAnom_beta = 'springTminAnom', springTminSite_beta = 'springTminSite', surDefAnom_beta = 'surDefAnom',
+         surDefSite_beta = surDefSite)
 
 write.csv(fecParams, file = paste0(sppath, 'fecParams.csv'), row.names = FALSE)
 
-repParams <- bind_rows(acer, betula, carya, cornus, fagus, fraxinus, ilex, liquidambar, 
-                    liriodendron, nyssa, oxydendrum, picea, pinus, quercus, tsuga) %>%
+
+## reproductive
+repParams <- bind_rows(abiesRep, acerRep, ailanthusRep, amelanchierRep, asiminaRep, betulaRep, carpinusRep, caryaRep, celtisRep, cercisRep, cornusRep, diospyrosRep, 
+                       fagusRep, fraxinusRep, ilexRep, juglansRep, juniperusRep, linderaRep, liquidambarRep, liriodendronRep, magnoliaRep, nyssaRep, ostryaRep, 
+                       oxydendrumRep, paulowniaRep, piceaRep, pinusRep, platanusRep, prunusRep, quercusRep, robiniaRep, sassafrasRep, sorbusRep, tiliaRep, tsugaRep, 
+                       ulmusRep) %>%
   rename(interceptRep = '(Intercept)', diam_betaRep = diam)
 
 write.csv(repParams, file = paste0(sppath, 'repParams.csv'), row.names = FALSE)
 
+# combine tree data and extract shade values ----
+ailanthusTreeData$cropCount <- NA
+ailanthusTreeData$cropFraction <- NA
+ailanthusTreeData$cropFractionSd <- NA
+linderaTreeData$cropCount <- NA
+linderaTreeData$cropFraction <- NA
+linderaTreeData$cropFractionSd <- NA
+ulmusTreeData$cropCount <- NA
+ulmusTreeData$cropFraction <- NA
+ulmusTreeData$cropFractionSd <- NA
 
-```
+treeDataList <- list(abiesTreeData, acerTreeData, ailanthusTreeData, amelanchierTreeData, asiminaTreeData, betulaTreeData, carpinusTreeData, caryaTreeData, celtisTreeData, 
+                 cercisTreeData, cornusTreeData, diospyrosTreeData, fagusTreeData, fraxinusTreeData, ilexTreeData, juglansTreeData, juniperusTreeData, linderaTreeData, 
+                 liquidambarTreeData, liriodendronTreeData, magnoliaTreeData, nyssaTreeData, ostryaTreeData, oxydendrumTreeData, paulowniaTreeData, piceaTreeData, pinusTreeData, 
+                 platanusTreeData, prunusTreeData, quercusTreeData, robiniaTreeData, sassafrassTreeData, sorbusTreeData, tiliaTreeData, tsugaTreeData, ulmusTreeData)
 
-```{r climate from outputs}
-srpath <- '/Users/taylorminich/Documents/grad/mp/data/seeds/raw/'
-sppath <- '/Users/taylorminich/Documents/grad/mp/data/seeds/processed/'
+treeData <- bind_rows(treeDataList)
+shadeParams <- treeData %>%
+  group_by(species) %>%
+  summarise(shade = median(shade)) %>%
+  rename(code = species)
+
+write.csv(shadeParams, file = paste0(sppath, 'shadeParams.csv'), row.names = FALSE)
 
 
-load(paste0(srpath, 'pinusOutput.rdata'))  # BART, SCBI, GRSM, HARV, 
-pine <- output
+# Calculate predicted probabilities manually
+m <- model.matrix(tsugaFormulaFec, tsugaTreeData)[,]
+coef <- model.matrix(tsugaFormulaFec, tsugaFec)
 
-load(paste0(srpath, 'betulaOutput.rdata'))
-betula <- output
+mast <- t(exp(coef %*% t(m)))
 
-inputs <- output$inputs$treeData %>%
-  select(plot, year, winterTminSite, winterTminAnomaly, defSite, defAnomaly) %>%
-  mutate(siteID = recode_factor(plot, `BARTC1P1` = 'BART', `HARVBW` = 'HARV', `SCBILFDP` = 'SCBI', `GRSWBIS` = 'GRSM')) 
-```
+m1 <- model.matrix(ulmusFormulaFec, ulmusTreeData)
+ulmusFecMat <- ulmusFec %>%
+  select(-species)
+coef3 <- as.data.frame(model.matrix(ulmusFormulaFec, ulmusFec)) %>%
+  select(-c(colnames(ulmusFecMat))) %>%
+  cbind(ulmusFecMat) %>%
+  select(colnames(m1)) %>%
+  as.matrix()
+
+mast1 <- t(exp(coef3 %*% t(m1)))
+ ```

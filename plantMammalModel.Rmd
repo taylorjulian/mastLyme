@@ -10,7 +10,8 @@ spath <- '/Users/taylorminich/Documents/grad/mp/data/seeds/'
 
 ```{r make df}
 mammal <- read.csv(paste0(mapath, 'mammal.csv'))
-mast <- read.csv(paste0(spath, 'mast.csv'))
+mast <- read.csv(paste0(spath, 'mast.csv')) %>%
+  rename(code = species)
 nutrition <- read.csv(paste0(spath, 'nutrition.csv'))
 
 mplotBART <- c('BART_062', 'BART_012', 'BART_007', 'BART_084', 'BART_001', 'BART_015')
@@ -51,7 +52,7 @@ pplots <- levels(pairs$plant)
 plant <- mast %>%
   filter(plotID %in% pplots) %>%
   left_join(nutrition, by = c('code', 'genus')) %>%
-  select(-species, -oil, -protein, -carbs) %>%
+  select(-species) %>%
   mutate(grams = mast * gmPerSeed) %>%
   group_by(plotID, year, genus) %>%
   summarise(grams = sum(grams)) %>%
@@ -92,166 +93,13 @@ mdf(siteSERC, mplotSERC, pplotSERC)
 mammal <- bind_rows(BART, BLAN, GRSM, HARV, SCBI, SERC) %>%
   replace(is.na(.), 0) %>%
   mutate(year = year(collectDate)) %>%
-  select(pair, year, total, totalTraps, BLBR, PELE, PEME, PEMA, SOCI, TAST) %>%
+  #select(-collectDate, -plotID, -pplot, -OTHE, -MUNI, -ROSP, -MUER, -GLSA, -CRSP, -PEGO, -PEME, -SYFL, -SCCA) %>%
+  select(pair, year, total, totalTraps, BLBR, PELE, PEMA, SOCI, TAST) %>%
   group_by(year, pair) %>%
   summarise_all(sum) %>%
   filter(pair %in% plant$pair) %>%
   ungroup() %>%
   mutate(pair = factor(pair))
-
-```
-
-```{r model with total mast and t, t-1, t-2}
-plant$total <- rowSums(plant[,3:length(plant)])
-
-m18 <- mammal$pair[mammal$year == 2018]
-p18 <- plant$pair[plant$year == 2018]
-p17 <- plant$pair[plant$year == 2017]
-p16 <- plant$pair[plant$year == 2016]
-set2018 <- Reduce(intersect, list(m18, p18, p17, p16))
-
-m17 <- mammal$pair[mammal$year == 2017]
-p17 <- plant$pair[plant$year == 2017]
-p16 <- plant$pair[plant$year == 2016]
-p15 <- plant$pair[plant$year == 2015]
-set2017 <- Reduce(intersect, list(m17, p17, p16, p15))
-
-m16 <- mammal$pair[mammal$year == 2016]
-p16 <- plant$pair[plant$year == 2016]
-p15 <- plant$pair[plant$year == 2015]
-p14 <- plant$pair[plant$year == 2014]
-set2016 <- Reduce(intersect, list(m16, p16, p15, p14))
-
-m15 <- mammal$pair[mammal$year == 2015]
-p15 <- plant$pair[plant$year == 2015]
-p14 <- plant$pair[plant$year == 2014]
-p13 <- plant$pair[plant$year == 2013]
-set2015 <- Reduce(intersect, list(m15, p15, p14, p13))
-
-m14 <- mammal$pair[mammal$year == 2014]
-p14 <- plant$pair[plant$year == 2014]
-p13 <- plant$pair[plant$year == 2013]
-p12 <- plant$pair[plant$year == 2012]
-set2014 <- Reduce(intersect, list(m14, p14, p13, p12))
-
-mammal2018 <- mammal %>%
-  filter(pair %in% set2018) %>%
-  filter(year == 2018)
-
-mammal2017 <- mammal %>%
-  filter(pair %in% set2017) %>%
-  filter(year == 2017)
-
-mammal2016 <- mammal %>%
-  filter(pair %in% set2016) %>%
-  filter(year == 2016)
-
-mammal2015 <- mammal %>%
-  filter(pair %in% set2015) %>%
-  filter(year == 2015)
-
-mammal2014 <- mammal %>%
-  filter(pair %in% set2014) %>%
-  filter(year == 2014)
-
-mammal <- bind_rows(mammal2018, mammal2017, mammal2016, mammal2015, mammal2014)
-
-plant2018t <- plant %>%
-  filter(pair %in% set2018) %>%
-  filter(year == 2018)
-
-plant2017t <- plant %>%
-  filter(pair %in% set2017) %>%
-  filter(year == 2017)
-
-plant2016t <- plant %>%
-  filter(pair %in% set2016) %>%
-  filter(year == 2016)
-
-plant2015t <- plant %>%
-  filter(pair %in% set2015) %>%
-  filter(year == 2015)
-
-plant2014t <- plant %>%
-  filter(pair %in% set2014) %>%
-  filter(year == 2014)
-
-plantt <- bind_rows(plant2018t, plant2017t, plant2016t, plant2015t, plant2014t) %>%
-  select(pair, total)
-
-plant2017t_1 <- plant %>%
-  filter(pair %in% set2018) %>%
-  filter(year == 2017)
-
-plant2016t_1 <- plant %>%
-  filter(pair %in% set2017) %>%
-  filter(year == 2016)
-
-plant2015t_1 <- plant %>%
-  filter(pair %in% set2016) %>%
-  filter(year == 2015)
-
-plant2014t_1 <- plant %>%
-  filter(pair %in% set2015) %>%
-  filter(year == 2014)
-
-plant2013t_1 <- plant %>%
-  filter(pair %in% set2014) %>%
-  filter(year == 2013)
-
-plantt_1 <- bind_rows(plant2017t_1, plant2016t_1, plant2015t_1, plant2014t_1, plant2013t_1) %>%
-  select(pair, total)
-
-plant2016t_2 <- plant %>%
-  filter(pair %in% set2018) %>%
-  filter(year == 2016)
-
-plant2015t_2 <- plant %>%
-  filter(pair %in% set2017) %>%
-  filter(year == 2015)
-
-plant2014t_2 <- plant %>%
-  filter(pair %in% set2016) %>%
-  filter(year == 2014)
-
-plant2013t_2 <- plant %>%
-  filter(pair %in% set2015) %>%
-  filter(year == 2013)
-
-plant2012t_2 <- plant %>%
-  filter(pair %in% set2014) %>%
-  filter(year == 2012)
-
-plantt_2 <- bind_rows(plant2016t_2, plant2015t_2, plant2014t_2, plant2013t_2, plant2012t_2) %>%
-  select(pair, total)
-
-xdata <- plantt %>%
-  rename(t = total) %>%
-  mutate(t_1 = plantt_1$total, t_2 = plantt_2$total) %>%
-  select(-pair)
-xdata <- data.frame(xdata)
-
-ydata <- mammal %>%
-  ungroup() %>%
-  select(BLBR, PELE, PEME, PEMA, SOCI, TAST)
-ydata <- data.frame(ydata)
-
-edata <- mammal %>%
-  ungroup() %>%
-  select(totalTraps)
-
-edata <- as.matrix(edata)
-S <- length(ydata)
-n <- length(ydata$BLBR)
-ef <- list(columns = 1:S, values = edata)
-formula <- as.formula(~ t+t_1+t_2)
-modelList <- list(typeNames = c('DA'), effort = ef, ng = 10000, burnin = 1000)
-pmTotalLag3Output <- gjam(formula = formula, xdata = xdata, ydata = ydata, modelList = modelList)
-
-# gjam plots
-pl <- list(GRIDPLOTS = TRUE, SAVEPLOTS = FALSE)
-gjamPlot(output = pmTotalLag3Output, plotPars = pl)
-
 ```
 
 ```{r model with total mast and t, t-1}
@@ -359,12 +207,14 @@ plantt_1 <- bind_rows(plant2017t_1, plant2016t_1, plant2015t_1, plant2014t_1, pl
 xdata <- plantt %>%
   rename(t = total) %>%
   mutate(t_1 = plantt_1$total) %>%
+  mutate(siteID = substr(pair, 1, 4)) %>%
   select(-pair)
 xdata <- data.frame(xdata)
 
 ydata <- mammal %>%
   ungroup() %>%
-  select(BLBR, PELE, PEMA, SOCI, TAST)
+  select(-year, -pair, -total, -totalTraps)
+  #select(BLBR, PELE, PEMA, SOCI, TAST)
 ydata <- data.frame(ydata)
 
 edata <- mammal %>%
@@ -376,12 +226,13 @@ S <- length(ydata)
 n <- length(ydata$BLBR)
 ef <- list(columns = 1:S, values = edata)
 formula <- as.formula(~ t+t_1)
-modelList <- list(typeNames = c('DA'), effort = ef, ng = 10000, burnin = 1000)
+modelList <- list(typeNames = c('DA'), effort = ef, ng = 100000, burnin = 5000, random = 'siteID')
 pmTotalLag2Output <- gjam(formula = formula, xdata = xdata, ydata = ydata, modelList = modelList)
 
 # gjam plots
 pl <- list(SAVEPLOTS = TRUE)
 gjamPlot(output = pmTotalLag2Output, plotPars = pl)
+
 
 
 save(pmTotalLag2Output, file = 'pmTotalLag2Output.rdata')
@@ -464,12 +315,13 @@ plant2013 <- plant %>%
 
 xdata <- bind_rows(plant2018, plant2017, plant2016, plant2015, plant2014, plant2013) %>%
   ungroup() %>%
-  select(-year, -pair, -total)
-xdata <- data.frame(xdata)
+  mutate(siteID = substr(pair, 1, 4)) %>%
+  select(-pair, -year) %>%
+  as.data.frame()
 
 ydata <- mammal %>%
   ungroup %>%
-  select(BLBR, PELE, TAST)
+  select(BLBR, PEMA, TAST)
 ydata <- data.frame(ydata)
 
 edata <- mammal %>%
@@ -480,10 +332,11 @@ paste(names(xdata), collapse='+')
   
 edata <- as.matrix(edata)
 S <- length(ydata)
-n <- length(ydata$BLBR)
+n <- length(ydata$PEMA)
 ef <- list(columns = 1:S, values = edata)
-formula <- as.formula(~ Acer+Betula+Carya+Cornus+Fagus+Fraxinus+Ilex+Liquidambar+Nyssa+Picea+Pinus+Quercus+Tsuga)
-modelList <- list(typeNames = c('DA'), effort = ef, ng = 10000, burnin = 1000)
+formula <- as.formula(~ Acer+Ailanthus+Betula+Carpinus+Carya+Celtis+Cercis+Cornus+Diospyros+Fagus+Fraxinus+Ilex+Juglans+Lindera+Liquidambar+Liriodendron+Magnolia+Nyssa+Ostrya+Oxydendrum+Picea+Pinus+Platanus+Prunus+Quercus+Robinia+Sassafras+Tsuga+Ulmus)
+modelList <- list(typeNames = c('DA'), effort = ef, ng = 100000, burnin = 5000, random = 'siteID')
+modelList$REDUCT <- FALSE
 pmHostT1Output <- gjam(formula = formula, xdata = xdata, ydata = ydata, modelList = modelList)
 
 # gjam plots
@@ -558,12 +411,13 @@ plant2013 <- plant %>%
 
 xdata <- bind_rows(plant2017, plant2016, plant2015, plant2014, plant2013) %>%
   ungroup() %>%
-  select(-year, -pair, -total)
+  mutate(siteID = substr(pair, 1, 4)) %>%
+  select(-year, -pair)
 xdata <- data.frame(xdata)
 
 ydata <- mammal %>%
   ungroup %>%
-  select(PEMA, SOCI)
+  select(PELE, SOCI)
 ydata <- data.frame(ydata)
 
 edata <- mammal %>%
@@ -576,8 +430,9 @@ edata <- as.matrix(edata)
 S <- length(ydata)
 n <- length(ydata$BLBR)
 ef <- list(columns = 1:S, values = edata)
-formula <- as.formula(~ Acer+Betula+Carya+Cornus+Fagus+Fraxinus+Ilex+Liquidambar+Nyssa+Picea+Pinus+Quercus+Tsuga)
-modelList <- list(typeNames = c('DA'), effort = ef, ng = 10000, burnin = 1000)
+formula <- as.formula(~ Acer+Ailanthus+Betula+Carpinus+Carya+Celtis+Cercis+Cornus+Diospyros+Fagus+Fraxinus+Ilex+Juglans+Lindera+Liquidambar+Liriodendron+Magnolia+Nyssa+Ostrya+Oxydendrum+Picea+Pinus+Platanus+Prunus+Quercus+Robinia+Sassafras+Tsuga+Ulmus)
+modelList <- list(typeNames = c('DA'), effort = ef, ng = 100000, burnin = 5000, random = 'siteID')
+modelList$REDUCT <- FALSE
 pmHostTOutput <- gjam(formula = formula, xdata = xdata, ydata = ydata, modelList = modelList)
 
 # gjam plots

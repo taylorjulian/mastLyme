@@ -191,13 +191,14 @@ ggplot(data = NULL) +
 ```
 
 ```{r write plant data}
-pppath <- '/Users/taylorminich/Documents/grad/mp/data/plants/processed1/'
+pppath <- '/Users/taylorminich/Documents/grad/mp/data/plants/processed/'
 papath <- '/Users/taylorminich/Documents/grad/mp/data/plants/abundance/'
 plots <- read.csv(paste0(pppath, 'plots.csv'), header = TRUE)
 species <- read.csv(paste0(pppath, 'species.csv'), header = TRUE)
 
-genera <- c('Acer', 'Asimina', 'Betula', 'Carpinus', 'Carya', 'Cornus', 'Fagus', 'Fraxinus', 'Ilex', 'Lindera', 'Liriodendron', 
-            'Liquidambar', 'Nyssa', 'Oxydendron', 'Picea', 'Pinus', 'Quercus', 'Rhododendron', 'Tsuga')
+genera <- c('Abies', 'Acer', 'Ailanthus', 'Amelanchier', 'Asimina', 'Betula', 'Carpinus', 'Carya', 'Celtis', 'Cercis', 'Cornus', 'Diospyros', 'Fagus', 'Fraxinus', 'Ilex', 'Juglans', 
+            'Juniperus', 'Lindera', 'Liquidambar', 'Liriodendron', 'Magnolia', 'Nyssa', 'Ostrya', 'Oxydendrum', 'Paulownia', 'Picea', 'Pinus', 'Platanus', 'Prunus', 'Quercus', 'Robinia', 
+            'Sassafras', 'Sorbus', 'Tilia', 'Tsuga', 'Ulmus')
 
 myPlots <- c('BART_028', 'BART_012', 'BART_007', 'BART_011', 'BART_001', 'BART_015', 'BLAN_011', 'BLAN_001', 'BLAN_009', 'BLAN_018',
              'GRSM_013', 'GRSM_004', 'GRSM_014', 'GRSM_008', 'GRSM_011', 'GRSM_003', 'GRSM_015', 'HARV_001', 'HARV_006', 'HARV_021', 'HARV_010', 
@@ -213,9 +214,6 @@ plant <- plots %>%
   spread(key = genus, value = n) %>%
   replace(is.na(.), 0)
   
-
-
-
 #write.csv(plant, file = paste0(papath, 'plant.csv'), row.names = FALSE)
 ```
 
@@ -242,4 +240,19 @@ ggplot(df) +
   ) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r create species chart}
+papath <- '/Users/taylorminich/Documents/grad/mp/data/plants/abundance/'
+mapath <- '/Users/taylorminich/Documents/grad/mp/data/mammals/abundance/'
+
+tree <- read.csv(paste0(papath, 'tree.csv'))
+mammal <- read.csv(paste0(mapath, 'mammal.csv')) %>%
+  select(-collectDate, -plotID, -domainID, -nlcdClass, -elevation, -lat, -lon, -geodeticDatum, -totalTraps, -total) %>%
+  group_by(siteID) %>%
+  summarise_all(sum) %>%
+  gather('mammalSpecies', 'count', -siteID) %>%
+  filter(count > 0) %>%
+  select(-count) %>%
+  distinct()
 ```

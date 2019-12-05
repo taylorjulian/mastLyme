@@ -1,0 +1,173 @@
+---
+output: 
+  bookdown::pdf_book:
+    toc: true
+    fig_caption: yes
+    fig_width: 7
+    fig_height: 7
+    template: manuscript.latex
+    includes:
+      in_header: preamble.tex
+      before_body: title.sty
+    latex_engine: xelatex
+documentclass: article
+classoption: a4paper
+link-citations: true
+capsize: normalsize
+fontsize: 11pt
+geometry: margin=1in
+linenumbers: yes
+spacing: doublespacing
+toc-depth: 1
+secnumdepth: 3
+site: bookdown::bookdown_site
+bibliography: citations.bib
+biblio-style: apalike
+csl: ecology.csl
+header-includes: 
+- \usepackage[section]{placeins}
+- \renewcommand{\contentsname}{Table of contents}
+- \usepackage{float}
+- \floatplacement{figure}{H}
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.pos = 'H')
+```
+
+# Abstract
+
+\singlespace
+
+\vspace{2mm}\hrule
+
+Tick-borne diseases are the most common vector-borne illnesses in the United States, with Lyme disease being the most frequently reported. Due to a warming climate, the incidence rates of tick-borne diseases are projected to increase — a risk exacerbated by the continued reslience of these diseases to the development of vaccines and treatments. Forecasting the risk of infection to prevent transmission in the first place remains the best approach for fighting tick-borne illnesses. Reservoir hosts, such as small mammals and deer, facilitate the transmission from the tick vector to humans with varying levels of success. Likewise, the population dynamics of reservoir host species may hinge on mast seeding events, or the synchronous, interannual variability in seed crop production within populations of perennial plants. The pulsed resource creates a trophic cascade through the food web that provides spatiotemporally separated niches for primary consumers of the mast. I explore the capacity of mast seeding events to explain, and therefore forecast, the distribution of ticks and the reservoir host species that facilitate tick-borne diseases in the eastern United States. I estimate the historic mast seeding events of individual trees with a state-space autoregressive model, synthesizing seed count data collected from sites for several decades. Based on these estimates, I determine the degree to which different genera of perennial plants affect reservoir host species, and in turn the degree to which different host species affect tick population dynamics.
+
+\vspace{3mm}\hrule
+
+*Keywords*: blacklegged tick; Lyme disease; masting; pulsed-resource; resource-consumer interactions; tick-borne disease; tree seed production
+
+\doublespace
+
+# Introduction
+Resource pulses—temporally-variable influxes of nutrition in an ecosystem—travel through food webs like trophic cascades [@Paine1980; @Ostfeld2000]. Examples of pulsed-resources abound across different ecosystems, yet all are characterized by low frequency, large magnitude, and short duration relative to the timescale of their consumer [@Yang2008]. These episodic events, such as sudden marine upwellings [@Bode1997] and El Niño downpours [@Letnic2005], may provide stability and functionality within a variety of communities [@McMeans2015].
+
+One such pulsed resource is mast seeding [@Ostfeld2000]. The behavior describes the synchronous, interannual variability in seed crop production within populations of perennial plants [@Kelly1994]. Although the ultimate and proximate causes for the behavior remain unresolved, mast seeding seems to be linked to the relationship between weather cues and the allocation of resources towards reproduction [@Pearse2016]. The exact nature of this relationship depends on the species, yet empirical studies have shown that high temperatures in the spring months correlate with high seed crops [@Sork1993; @Koenig1996]. Indeed, @Perez-Ramos2015 found that colder spring temperatures may reduce both the synchrony in pollen release and successful fertilization as well as the overall size of the seed crop. 
+
+The resource pulse cascades through higher trophic levels, generating spatiotemporal structure in the ecosystem that varies from year to year [@Bergeron2011]. Theoretical and empirical evidence suggest that primary consumers—species that feed directly on the seed crop produced by forests—experience the greatest effect from masting behavior [@Mills1993]. The structure created by masting is complex, however, as some primary consumers may anticipate the dynamic resource availability, adjusting juvenile emergence with peak food abundance before a mast seeding event [@Boutin2006; @White2008]. Therefore, anticipatory consumers grow their populations in synchrony with the pulse-resource whereas reactionary consumers experience a lag [@Bergeron2011]. These temporally separated niches may promote species coexistence and ecosystem stability [@Loreau2008].
+
+Depending on the strength of the environmental cues, the pulsed nature of the resource may reverberate beyond the level of primary producer [Paine1980]. An important example of such a phenomenon is the degree to which mast seeding influences the spatiotemporal distribution of ticks (*Ixodes* spp.) and, thus, tick-borne diseases. Tick populations rely on primary consumers of mast seeding such as small mammals and deer [@Granter2014]. Not only do the consumers support tick populations, but they also act as hosts facilitating the spread of tick-borne diseases across the parasite’s different life stages [@Ostfeld2018]. 
+
+Ticks pass through four life stages during their two-year lifespan – egg, larva, nymph, and adult. Upon hatching in the summer, larvae and nymphs must consume a blood meal to develop into the next stage [@Granter2014]. Likewise, an adult female feeds one last time before dropping from the host, laying her eggs, and completing the cycle. As ticks hatch uninfected, it is during these feeding bouts that the disease transmits from the host to the tick vector, and back again. The long-term transmission of tick-borne diseases relies on the successful infection of hosts; however, different host species have differential infection rates [@LoGiudice2003]. The most successful host species are termed reservoir hosts. The primary hosts responsible for tick-borne diseases in eastern North America are the white-footed mouse (*Peromyscus leucopus*), the deer mouse (*Peromyscus maniculatus*), the masked shrew (*Sorex cinereus*), the short-tailed shrew (*Blarina brevicauda*), and the eastern chipmunk [*Tamias striatus*; @Barbour2017; @Ostfeld2018].
+
+Tick-borne diseases are the most common vector-borne illnesses in the United States, with Lyme disease being the most frequently reported [@Dantas-Torres2012; @Adrion2015] at an estimated 30,000 new cases each year [@CDCCentersforDiseaseControlandPrevention2019]. Since ticks favor warm temperatures, climate change will likely exacerbate the incidence of Lyme disease, by as much as 20 percent [@Dumic2018]. Thus far, we have had limited success in developing vaccines and treatments for tick-borne diseases, and prevention remains the best approach for reducing their incidence [@Piesman2008]. The disease is caused by the spirochete bacterium, *Borrelia burgdorferi*, but relies on the interaction between hosts and the tick vector for transmission. A growing body of research has prioritized determining the degree to which different wildlife species may act as reservoirs of future zoonotic disease as a means of forecasting human disease risk [@Karesh2012; @Han2015]. 
+
+A better understanding of the population dynamics of competent reservoir host species as determined by mast seeding pulsed-resources will improve our capacity to forecast the spatiotemporal distribution of outbreaks of tick-borne diseases. Here, I assess the impacts mast seeding have on tick populations through their connection with reservoir hosts. I ask:
+
++ Which plants influence reservoir host populations by mast seeding? 
++ Which reservoir hosts are responsible for determining the dynamics of tick populations in the eastern United States? 
++ What are the associated lag times between these processes?
+
+# Methods
+## Data collection and study sites
+I leveraged two data networks to understand the nature of these processes: the Mast Inference and Prediction [MASTIF, @Clark2019] network and the National Ecological Observatory Network [NEON, @NEONNationalEcologicalObservatoryNetwork2018]. 
+
+MASTIF is a long-term monitoring network with more than 500 plots across North America that collect seed counts annually as well as basic tree metrics such as diameter at breast height (DBH), location, species identification, canopy cover (grown in the open to grown in full shade), and maturation status. Seed count data collected by the MASTIF network are used to fit a state-space autoregressive model that predicts maturation and fecundity for individual trees over time. The synthesis generates a posterior distribution across all sites, trees, and years to describe the spatiotemporal patterns of mast seeding behavior. Typically, the model requires inputs of DBH as well as climate variables. I accessed historical potential and actual evapotranspiration as well as temperature for the MASTIF field sites from the NASA TerraClimate product [@Abatzoglou2018] through Google Earth Engine [@Gorelick2017].
+
+NEON is a continental-scale observation facility that collects long-term ecological, atmospheric, and environmental data. Their methods are systematic and reproducible across approximately 80 field sites. Here, I focus on their *woody plant vegetation structure*, *small mammal box trapping*, and *ticks sampled using drag cloths* datasets as estimates for plant, small mammal, and tick abundance, respectively. These data are collected on separate, often overlapping plots within a field site. Similar to MASTIF, technicians at NEON collect basic tree metrics such as DBH, location, species identification, height, and mortality status for all of the trees and woody shrubs $\geq$ 10 cm DBH within the plant abundance plots. Small mammal abundance plots are organized with 100 box traps per plot. For each sampling bout, technicians record the trap’s location and catch status as well as the animal’s species identification. Although the small mammal traps capture an array of different species, I focus only on the competent reservoir hosts in this region: the white-footed mouse (*P. leucopus*), the deer mouse (*P. maniculatus*), the masked shrew (*S. cinereus*), the short-tailed shrew (*B. brevicauda*), and the eastern chipmunk [*T. striatus*; @Barbour2017; @Ostfeld2018]. Tick abundance sampling involves dragging a $1m^2$ cloth along the ground. The life stage (larva, nymph, or adult) of the ticks captured on the cloth is recorded. Animals are sampled at regular intervals throughout the year.
+
+I limited my study region to the eastern United States where the blacklegged tick (*Ixodes scapularis*) is common [@CDCCentersforDiseaseControlandPrevention2019a]. I overlaid the MASTIF and NEON field sites and found six regions, concentrated in the Northeast, where both sets of data are collected. These sites allow for modeling at every stage (*i.e.* mast density to small mammal abundance, and small mammal abundance to tick abundance). In order to incorporate as much data as possible, I included an additional six field sites where only NEON data are collected. As the interannual mast behavior of these regions is unknown, the additional sites supplement the stage of the model addressing the effects of small mammal abundance on tick abundance. On the plant abundance plots overlapping a MASTIF site, 48 species of woody plants from 29 genera (*Acer*, *Ailanthus*, *Betula*, *Carpinus*, *Carya*, *Celtis*, *Cercis*, *Cornus*, *Diospyros*, *Fagus*, *Fraxinus*, *Ilex*, *Lindera*, *Liquidambar*, *Liriodendron*, *Juglans*, *Magnolia*, *Nyssa*, *Ostrya*, *Oxydendrum*, *Picea*, *Pinus*, *Platanus*, *Prunus*, *Quercus*, *Robinia*, *Sassafras*, *Tsuga*, and *Ulmus*) are present.
+
+Within the NEON sites, there are multiple plots collecting data for each dataset (plant abundance, small mammal abundance, and tick abundance). I paired up the different plots with each other by proximity so that for the sites collecting both MASTIF and NEON data, there is a unique combination of plant abundance, small mammal abundance, and tick abundance plots serving as an observational unit. For the sites collecting only NEON data, the observational unit encompasses pairs of small mammal abundance and tick abundance plots. Data collection for the NEON datasets began for most of the sites within my study region in 2012 and continued until the end of my study period in 2018.
+
+![Map of the NEON and MASTIF field sites within the study region (top). Example of the plots making up an observational unit for a field site represented by just NEON (bottom left) and represented by both NEON and MASTIF (bottom right).](/Users/taylorminich/Documents/grad/mp/images/map.jpeg)
+
+
+```{r , echo = FALSE, warning = FALSE, message = FALSE}
+library(tidyverse)
+sites <- c('Bartlett Experimental Forest', 'Blandy Experimental Farm', 'Disney Wilderness Preserve', 'Great Smoky Mountains National Park', 'Harvard Forest', 'Jones Ecological Research Center', 'Konza Prairie Biological Station', 'Oak Ridge National Laboratory', 'Ordway-Swisher Biological Station', 'Smithsonian Conservation Biology Institute', 'Smithsonian Environmental Research Center', 'University of Kansas Field Station')
+num <- c(6, 4, 7, 7, 7, 6, 6, 6, 6, 6, 6, 6)
+df <- data.frame(sites, num)
+colnames(df) <- c('Field site', 'Number of observational units')
+knitr::kable(df, align=rep('c', length(df[,1])), 'latex', caption = 'The number of observational units (unique combination of plant-mammal-tick plots or mammal-tick plots) per field site. Field sites present in both the MASTIF and NEON networks are in bold.', escape = F) %>% kableExtra::row_spec(c(1,2, 4, 5, 10, 11), bold = TRUE)
+```
+
+## Model design
+### Mast density
+The MASTIF model is a state-space autoregressive model that estimates the mast density (seeds/unit area) of an individual tree per year as a function of DBH, canopy cover, and optional climate variables, recovering the latent parameters of maturation state and conditional fecundity in the process [@Clark2019]. Although the full MASTIF model includes parameters describing the shape of seed dispersal, I focused on the parameterization of maturation state, conditional fecundity, and actual fecundity. Therefore, I assume that all of the seeds stay within the site and available to consumers where they were produced, regardless of the dispersal characteristics of the tree. 
+
+I modeled the *maturation state*—the event that tree $i$ can produce seed in year $t$—on the binomial distribution, where $\rho_{i,t} \in \{0, 1\}$, as a function of DBH. The covariate effects on the maturation probability are represented by the coefficients in $\mathbf{\beta}^v$. I modeled the *conditional fecundity*—the number of seeds produced by tree $i$ in year $t$ given that the individual is mature ($\rho = 1$)—on a log-transformed normal distribution, where $\log \psi_{i, t} \sim \mathcal{N}(\mu_{i, t}, \sigma^2)$, as a function of DBH, canopy cover, surface deficit (surDefSite; the difference between potential evapotranspiration and actual evapotranspiration), spring minimum temperature (springTminSite; the minimum temperature between March and May, inclusive), and the anomalies of surface deficit (surDefAnom) and spring minimum temperature (springTminAnom) from one year to the next. Coefficients in $\mathbf{\beta}^x$ describe the covariate effects of conditional fecundity. The *actual fecundity* $f_{i,t} = \psi_{i, t}\rho_{i, t} \ge 0$ is the product of conditional fecundity and maturation state. The site-level climate variables, surDefSite and springTminSite, give the model information on the spatial heterogeneity of water availability and spring temperature across the field sites. The anomalous climate variables, surDefAnom and springTminAnom, give the model information on the interannual changes in water availability and spring temperature. Both sets of variables are important predictors for masting behavior [@Pearse2016]. I modeled the different genera across all of the MASTIF sites separately, treating site as a random effect. When modeling a genus with more than one species present within the study region, I included species as an interactive term in both the maturation state and conditional fecundity models. 
+
+After recovering the parameters for the latent processes of maturation ($\mathbf{\beta}^v$) and fecundity ($\mathbf{\beta}^x$) from the MASTIF sites, I parameterized individual trees on the woody plant vegetation structure plots within the NEON sites and estimated their annual seed production. In doing so, I assume that individuals within a species modify their seed production in response to the climate in a similar manner based on geographic location. 
+
+### Nutritional availability
+As the mass rather than the number of seeds available is a better predictor of consumer behavior, I compiled information on the grams per seed for the species within my study region from the literature [Appendix: Table 2; @Bonner2008; @Barclay1974]. I multiplied the mast density (seeds/unit area) produced by each tree in each year by the seed weight (grams/seed), yielding an estimate for the mass of the mast (grams/unit area) produced in any given year. For the cases in which I could not find the seed weight for a given species, I used the average seed weight for that species’ genus. 
+
+### Determining lag time
+Before assessing which masting species affect the population dynamics of reservoir host species, I must determine the degree to which the consumers anticipate or react to the pulsed resource [@Smith1984]. I fit a generative Generalized Joint Attribute Model [GJAM; @Clark2017] to estimate the response of the reservoir host species to the total mast density available to them in time $t$ and $t-1$ (*i.e.* the mast density produced in the same year and from the year before the small mammals were captured). I assumed a lag time of $t-1$ when modeling the effect of host mammals on tick populations [@Ostfeld2018].
+
+GJAM predicts species abundance on the community level and is based on a joint distribution of parameters, predictors, and species responses. The parameters recovered by the model are of two types: the matrices of coefficients between predictors and species responses, and the covariance matrix between all of the species responses. The covariance matrix may account for sources of error unexplained by the predictors, such as interactions between species and environmental gradients. Sensitivity of the entire response matrix as well as sensitivities of individual species responses can be obtained from the diagonals of the covariance matrix, allowing for a pairwise estimate of the degree to which each predictor affects the response. 
+
+### Determining sensitivity of different species and genera
+Next, I modeled the response of the reservoir host species to the mast density produced by the different genera of woody plants present within each plot. I deemed a host species to be anticipatory or reactionary to the pulsed resource based on the strength of their sensitivity to the lag time from the previous model and considered the mast produced by individuals from a genus in time $t$ or time $t-1$ as the predictors accordingly. By accounting for the degree to which the host species might anticipate the mast seeding event, the model is better able to determine the sensitivity of the different tree genera to the reservoir hosts. Last, I modeled the different tick life stages as a response to the reservoir host species abundance in time $t$. I included the effort in obtaining the data (number of box traps for the small mammal sampling and area of cloth for the tick sampling) for all of the models.
+
+# Results
+In determining the lag time between mast seeding and small mammal abundance, I found a significant positive relationship between the mast density produced in time $t-1$ and one of the most common small mammals in my study region, the deer mouse (*P. maniculatus*). The eastern chipmunk (*T. striatus*) and the short-tailed shrew (*B. brevicauda*) also showed a greater sensitivity to a lag time of one year whereas the masked shrew (*S. cinereus*) and the white-footed mouse (*P. leucopus*) showed no lag time (Figure 2). Although these relationships were not significant, for some species (*P. leucopus*, *S. cinereus*, and *T. striatus*) they are substantiated by the literature [@Ostfeld2018; @Smith1984; @Bergeron2011].
+
+![The distribution of coefficient estimates for the model determining the lag time associated with mast seeding events and small mammal populations. Orange indicates a negative relationship between the species and lag time. Blue indicates a positive correlation. Asterisk indicates significance at the 95% level.](/Users/taylorminich/Documents/grad/mp/images/pmLag.png)
+
+After partitioning the effect of the mast seeding events across the different plant genera, I found scant evidence for which genera of trees are driving the dynamics of small mammal abundance (Figure 3). Only three plant genera showed a significant effect on small mammal species: a negative effect of sweetgum (*Liquidambar*) on *B. brevicauda*, a negative effect of locust (*Robinia*) on *P. maniculatus*, and a negative effect of hickory (*Carya*) on *T. striatus*. I found no evidence to suggest that the population dynamics of individual host species affects any of the mobile tick life stages (Figure 4). 
+
+![Credible intervals at the 95% level of coefficient estimates for the model determining the sensitivity of small mammal species to mast produced by different plant genera.](/Users/taylorminich/Documents/grad/mp/images/pmGenera.png)
+
+![Credible intervals at the 95% level of coefficient estimates for the model determining the sensitivity of tick life stages to small mammal abundance.](/Users/taylorminich/Documents/grad/mp/images/mtSpecies.png)
+
+# Discussion
+
+Tracking the effect of the pulsed resource of mast seeding on tick populations and their reservoir hosts involves one small food chain amongst a broader and more complex food web. Such an analysis can only consider bottom-up forces (*i.e.* where primary control is held by resources) on the community and neglects entirely top-down forces (*i.e.* where primary control is held by predators) as well as competitive exclusion within a trophic level [@Hardin1960; @Power1992]. Incorporating as many predictors as possible into a model, however, limits its simplicity (and therefore utility) and introduces a host of other issues such as overfitting and collinearity between predictors [@Wold1984; @Hawkins2004]. Bearing this in mind, it is important to determine whether the lack of significant connections between mast seeding and tick populations is accurate or rather a consequence of poor model performance.
+
+Like other Bayesian models, GJAM makes use of Gibbs sampling, a Markov chain Monte Carlo (MCMC) algorithm, to determine the marginal distribution of the parameters [@Gelfand2000; @Clark2017]. With any MCMC approach, it is important to make sure that the chains have converged on a singular coefficient estimate, even if the uncertainty associated with the estimate is large. Moreover, GJAM sets aside some of the data to determine how well the observations align with the predictions of the parameter estimates. Both the convergence of the MCMC chains and the comparison of predicted *vs* observed data are important indicators of model performance. All of the models showed complete convergence and a good fit between predicted *vs* observed data (Appendix: Figures 5-8). Even though the models performed well, they could have found a paucity of evidence for these processes for two reasons: the connection between the different trophic levels was weaker than expected or there were insufficient data to determine the connection.
+
+The competent reservoir host species for tick-borne diseases in the eastern United States are all generalist consumers [@Ostfeld2018]. In times of resource scarcity, generalist consumers, unlike their specialist counterparts, can undergo *diet switching*, or a dynamic altering of their diet in response to the environment [@Polis1996]. Indeed, some generalist consumers (such as *P. leucopus*) alter not only their diet but also their trophic level, removing themselves further from the pulsed resource of mast seeding [@Shaner2011]. In non-mast years, the reservoir host species can turn to other sources of food to sustain their populations, which diminishes the strength of bottom-up forces on a community. Indeed, the weak trophic interactions may be important in promoting community persistence and stability [@McCann1998]. Weak trophic interactions limit our ability to predict how other trophic levels react to mast seeding events, especially when the strength of the resource pulse is partitioned across different groups of plants or community types. 
+
+When it comes to forecasting the spatiotemporal distribution of tick abundance and Lyme disease risk, understanding the patterns of mast seeding events may not be enough. The strength of the pulsed resource diminishes as it travels through the population dynamics of generalist consumers. Moreover, using reservoir host species abundance as a predictor for tick abundance presents its own challenges [@VuHai2014]. Ticks have been known to expand their list of reservoir host species over time as communities are altered by culling programs [@Jaenson2012]. The spread of tick-borne diseases can depend more on the biodiversity of the entire community than the abundance of individual species [@Levi2016]. The populations of host species are also in a state of flux as they respond to climate change, anthropogenic modification of the landscape, and the introduciton of invasive species. The multitude, interactivity, and complexity of variables affecting tick-borne diseases place robust forecasting of disease risk beyond current human understanding [@Dantas-Torres2015]. Additional research into new and innovative approaches for predicting tick-borne disease risk are necessary to ensure its success. One such approach that shows promise uses prevalence of Lyme disease in our canine companions as a proxy for prevalence in humans, thereby removing the predictor from the complexity of multi-trophic interactions [@Watson2017]. Until we develop vaccines or treatments for Lyme disease and other tick-borne illnesses, forecasting risk and preventing the spread of infection remains our only option in the fight against tick-borne diseases.
+
+\pagebreak 
+
+# Appendix
+
+![MCMC chains (left) and Predicted vs Observed (right) for model determining lag time](/Users/taylorminich/Documents/grad/mp/images/modelPerformance/pmLag.png)
+
+![MCMC chains (left) and Predicted vs Observed (right) for model determining effect of plant genera on small mammal species with lag time t - 1](/Users/taylorminich/Documents/grad/mp/images/modelPerformance/pmGenerat1.png)
+
+![MCMC chains (left) and Predicted vs Observed (right) for model determining effect of plant genera on small mammal species with lag time t](/Users/taylorminich/Documents/grad/mp/images/modelPerformance/pmGenerat.png)
+
+![MCMC chains (left) and Predicted vs Observed (right) for model determining effect of small mammal species on tick life stages](/Users/taylorminich/Documents/grad/mp/images/modelPerformance/mtSpecies.png)
+
+```{r nutrition, echo = FALSE}
+species <- c('Abies fraseri', 'Acer negundo', 'Acer pensylvanicum', 'Acer rubrum', 'Acer saccharum', 'Ailanthus altissima', 'Amelanchier laevis', 'Betula alleghaniensis', 
+             'Betula lenta', 'Betula papyrifera', 'Carpinus caroliniana', 'Carya cordiformis', 'Carya ovata', 'Celtis occidentalis', 'Cercis canadensis', 'Cornus florida', 
+             'Diospyros virginiana', 'Fagus grandifolia', 'Fraxinus americana', 'Fraxinus pennsylvanica', 'Ilex opaca', 'Juglans nigra', 'Juniperus virginiana', 
+             'Lindera benzoin', 'Liquidambar styraciflua', 'Liriodendron tulipifera', 'Magnolia fraseri', 'Nyssa sylvatica', 'Ostrya virginiana', 'Oxydendrum arboreum', 
+             'Paulownia tomentosa', 'Picea glauca', 'Pinus rigida', 'Pinus strobus', 'Pinus taeda', 'Pinus virginiana', 'Platanus occidentalis', 'Prunus pensylvanica', 
+             'Quercus alba', 'Quercus coccinea', 'Quercus montana', 'Quercus rubra', 'Quercus velutina', 'Robinia pesudoacacia', 'Sassafras albidum', 'Sorbus americana', 
+             'Tsuga canadensis', 'Ulmus americana', 'Ulmus rubra')
+weight <- c('0.0221\\textsuperscript{1}', '0.0402\\textsuperscript{2}', '0.0371\\textsuperscript{1}', '0.0772\\textsuperscript{2}', '0.0621\\textsuperscript{1}', 
+            '0.0082\\textsuperscript{2}', '0.0062\\textsuperscript{2}', '0.0011\\textsuperscript{1}', '0.00081\\textsuperscript{1}', '0.00031\\textsuperscript{1}', 
+            '0.0261\\textsuperscript{1}', '6.6301\\textsuperscript{1}', '4.4001\\textsuperscript{1}', '0.1002\\textsuperscript{2}', '0.0322\\textsuperscript{2}', 
+            '0.1001\\textsuperscript{1}', '0.3782\\textsuperscript{2}', '0.2601\\textsuperscript{1}', '0.0452\\textsuperscript{2}', '0.0321\\textsuperscript{1}', 
+            '0.0161\\textsuperscript{1}', '11.3000\\textsuperscript{1}', '0.0101\\textsuperscript{1}', '0.1001\\textsuperscript{1}', '0.0061\\textsuperscript{1}', 
+            '0.0321\\textsuperscript{1}', '0.1001\\textsuperscript{1}', '0.5801\\textsuperscript{1}', '0.0151\\textsuperscript{1}', '0.00011\\textsuperscript{1}', 
+            '0.00021\\textsuperscript{1}', '0.0041\\textsuperscript{1}', '0.0271\\textsuperscript{1}', '0.0171\\textsuperscript{1}', '0.0071\\textsuperscript{1}', 
+            '0.0081\\textsuperscript{1}', '0.0042\\textsuperscript{2}', '0.0281\\textsuperscript{1}', '3.5401\\textsuperscript{1}', '1.9301\\textsuperscript{1}', 
+            '1.8001\\textsuperscript{1}', '3.6301\\textsuperscript{1}', '1.8501\\textsuperscript{1}', '0.0191\\textsuperscript{1}', '0.0911\\textsuperscript{1}', 
+            '0.0321\\textsuperscript{1}', '0.0021\\textsuperscript{1}', '0.0061\\textsuperscript{1}', '0.0111\\textsuperscript{1}')
+df <- data.frame(species, weight)
+colnames(df) <- c('Species', 'Seed weight (g/seed)')
+knitr::kable(df, align=rep('c', length(df[,1])), 'latex', caption = 'The number of observational units (unique combination of plant-mammal-tick plots or mammal-tick plots) per field site. Field sites present in both the MASTIF and NEON networks are in bold.', escape = F) %>% kableExtra::kable_styling(font_size = 7) %>% kableExtra::column_spec(1, italic = TRUE) %>%kableExtra::footnote(number = c('Bonner 2008', 'Barclay 1974'))
+```
+
+\pagebreak 
+
+# References
+
